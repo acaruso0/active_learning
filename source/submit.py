@@ -6,8 +6,9 @@ from time import sleep
 
 
 class SComputer():
-    def __init__(self, username, path):
+    def __init__(self, path, username, domain):
         self.username = username
+        self.email = self.username + domain
         self.path = path
         self.jobs = None
 
@@ -48,3 +49,6 @@ class SComputer():
         self.jobs = None
 
         return None
+
+    class _SubmitFile():
+        

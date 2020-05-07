@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --job-name=$JOBNAME
+#SBATCH --output=STDOUT
+#SBATCH --output=STDERR
+#SBATCH --partition=shared
+#SBATCH --mail-type=fail
+#SBATCH --mail-user=$EMAIL
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=$CPU
+#SBATCH --export=ALL
+#SBATCH -t $HOURS:00:00
+
+$COMMAND
