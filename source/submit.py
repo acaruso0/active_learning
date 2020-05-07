@@ -6,9 +6,8 @@ from time import sleep
 
 
 class SComputer():
-    def __init__(self, path, username, domain):
+    def __init__(self, path, username):
         self.username = username
-        self.email = self.username + domain
         self.path = path
         self.jobs = None
 
@@ -50,5 +49,36 @@ class SComputer():
 
         return None
 
-    class _SubmitFile():
-        
+
+class SubmitFile():
+    def __init__(self, username, domain):
+        self.username = username
+        self.email = self.username + domain
+        self.load()
+
+    def load(self):
+        with open('job_template', 'r') as job_temp:
+            job_temp = job_temp.read()
+        self.template = job_temp.replace('$EMAIL', self.email)
+
+        return None
+
+
+class SubmitMain(SubmitFile):
+    def __init__(self, username, domain):
+        super().__init__(username, domain)
+        self.load_settings()
+        print(self.template)
+
+    def load_settings(self):
+        line1 = ' '.join(['module', 'load', 'python'])
+        line2 = ' '.join(['python3', 'AL_framework.py', '>', 'stdout', '2>', 'stderr'])
+        command = '\n'.join([line1, line2])
+
+        self.template = self.template.replace('$JOBNAME', 'act_learn')
+        self.template = self.template.replace('$CPU', '1')
+        self.template = self.template.replace('$HOURS', '48')
+        self.template = self.template.replace('$COMMAND', command)
+
+
+test = SubmitMain("acaruso", "@ucsd.edu")
