@@ -13,7 +13,6 @@ class FittingModel:
 
     def init(self, folder=None, test_file=None, E_min=None):
         self.running_folder = folder
-
         self.test_file = test_file
         self.E_min = E_min
         self.xyz_test, self.e_test = read_data(test_file, E_columns=4)
