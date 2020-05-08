@@ -111,6 +111,7 @@ class SubmitFit(SubmitFile):
         self.template = self.template.replace('$HOURS', '2')
         self.template = self.template.replace('$COMMAND', command)
 
+
 class SubmitMolpro(SubmitFile):
     def __init__(self, username, domain, molpro_code, cpu=4):
         super().__init__(username, domain)
@@ -133,3 +134,4 @@ class SubmitMolpro(SubmitFile):
         self.template = self.template.replace('$CPU', self.cpu)
         self.template = self.template.replace('$HOURS', '2')
         self.template = self.template.replace('$COMMAND', command)
+
