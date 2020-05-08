@@ -2,12 +2,15 @@ import pandas as pd
 import numpy as np
 import subprocess as sp
 import configparser
+from sklearn.gaussian_process import GaussianProcessRegressor as GPR
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 
 
-class Loader():
+class Learner():
     def __init__(self, settings_file="settings.ini"):
         self.settings = settings_file
         self.load()
+        self.prepare()
 
     def load(self):
         config = configparser.ConfigParser()
@@ -99,3 +102,58 @@ class Loader():
         except Exception as e:
             print('create new trainset file fails: ' + str(e))
         return None
+
+    def prepare(self):
+        # Initialization
+        # Gaussian Kernel
+        kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))   # a common Gaussian kernel
+        gp = GPR(kernel=kernel, n_restarts_optimizer=9, alpha=1e-6)
+
+        # the fitting code used in AL, including both fitting and evaluating parts
+        model = fitting_model(fit_fold, fit_cdl, eval_exe)
+
+        coords = readxyz(file_train_pool, atom_lbl)
+        with open(desc_file, 'rb') as pickled:
+            X_train = pickle.load(pickled)
+        Y_train = np.zeros(X_train.shape[0])  # energy placeholder for the training set
+
+        idx_all = np.arange(X_train.shape[0])     # INDEX of all samples in the pool
+        idx_left = copy.deepcopy(idx_all)          # INDEX of samples left in the pool at current iteration
+        idx_now = idx_all[~np.in1d(idx_all, idx_left)]  # INDEX of samples in the current training set
+        #idx_failed = np.ones(idx_all.shape[0], dtype=bool)
+        err_train = np.zeros_like(idx_all, dtype=float)  # placeholder for training error on each sample in the pool
+
+        os.makedirs(output_folder, exist_ok=True)
+
+        write_energy_file(file_test, output_folder + 'val_refer.dat', col_to_write=1) # CHECK COLUMN NUMBER
+        model.init(output_folder, file_test, E_min)
+        file_train_tmp = '_trainset_tmp.xyz'
+
+        # Logfile
+        logfile = output_folder + '_PickSet.log'
+        to_log = ['Iteration' 'TrainSet_Size', 'Leftover_Size',
+                  'Train_MSE', 'Train_wMSE', 'Test_MSE', 'Test_wMSE',
+                  'Fitting[s]',
+                 ]
+        with open(logfile, 'w') as f:
+            for key in to_log:
+                print(key, end='\t', file=f)
+            print('', end='\n', file=f)
+
+        # saving settings
+        to_record = {
+            'Nr of samples in first iteration': sample_first_ite,
+            'Nr of samples picked in other iterations': sample_chose_per_ite,
+            'cluster size': cluster_size,
+            'STD weight': STD_weight,
+            'TRAIN ERROR weight': TRAINERR_weight,
+            'Used Guassian Process model': gp,
+        }
+
+        with open(output_folder+'_setting.ini', 'w') as f:
+            for key, value in to_record.items():
+                try:
+                    print(key + '\t' + str(value), end='\n', file = f )
+                except:
+                    print(key, end='\n', file = f)
+                    print(value, end='\n', file = f)
