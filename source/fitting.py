@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import subprocess as sp
 from time import sleep
+from submit import SComputer
 
 
 class FittingModel():
@@ -22,39 +23,6 @@ class FittingModel():
 
     # This is the fitting procedure including saving a copy of cdl file to nc file
     # Output is the training err on each sample and the corresponding weight
-
-    def run(self, nfits, subscript):
-        jobs = []
-        path_script = os.path.join(self.path, subscript)
-
-        for n in range(nfits):
-            os.mkdir('fit_' + str(n))
-            os.chdir('fit_' + str(n))
-            # trainset = os.path.join(self.fit_fold, file_lbl)
-            job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
-            check = job.communicate()[0]
-
-            while b'Submitted batch job' not in check:
-                sleep(60)
-                job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
-                check = job.communicate()[0]
-
-            job_idx = int(check.decode('utf-8').split()[3])
-            jobs.append(job_idx)
-
-            os.chdir('..')
-        os.chdir(self.path)
-
-        return np.array(jobs)
-
-    def check(self):
-        check_str = ['squeue', '-u', self.username]
-        check = sp.Popen(check_str, stdout=sp.PIPE)
-        out_str = io.StringIO(check.communicate()[0].decode('utf-8'))
-        df = pd.read_csv(out_str, sep='\s+')
-
-        return df['JOBID'].to_numpy().astype(int)
-
     def fit(self, ite=None, file_lbl=None):
         if ite is not None:
             ite = '_' + str(ite)
@@ -63,6 +31,7 @@ class FittingModel():
 
         # Next line: command to run the fitting code
         os.chdir(self.fit_fold)
+
         if os.path.exists('logs'):
             shutil.rmtree('logs')
         os.mkdir('logs')

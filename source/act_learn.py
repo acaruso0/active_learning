@@ -5,6 +5,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor as GPR
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from fitting import FittingModel
 from loader import Settings
+from submit import SubmitFit
 
 
 class Learner(Settings):
@@ -76,6 +77,9 @@ class Learner(Settings):
         self.write_energy_file(self.file_test, self.output + 'val_refer.dat', col_to_write=1)
         self.model.init(self.output, self.file_test, self.E_min)
         self.file_train_tmp = '_trainset_tmp.xyz'
+
+        fitting_code = os.path.join([self.fit_code, self.fit_exe])
+        SubmitFit(self.username, self.email, self.fit_fold, fitting_code, self.train_set, self.delta_E)
 
         # Logfile
         self.logfile = self.output + '_PickSet.log'

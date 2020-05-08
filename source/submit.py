@@ -64,18 +64,19 @@ class SubmitScript():
 
         return None
 
-    def write_file(self):
-        with open(self.filename, 'w+') as submit_file:
+    def write_file(self, path):
+        with open(os.path.join([path, self.filename]), 'w+') as submit_file:
             submit_file.writelines(self.template)
 
         return None
 
 
 class SubmitMain(SubmitScript):
-    def __init__(self, username, email):
+    def __init__(self, username, email, path):
         super().__init__(username, email)
         self.filename = 'submit.sh'
         self.load_settings()
+        self.write_file(path)
 
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'python'])
@@ -91,7 +92,7 @@ class SubmitMain(SubmitScript):
 
 
 class SubmitFit(SubmitScript):
-    def __init__(self, username, email, fitting_code, train_set, delta, alpha=0.0005):
+    def __init__(self, username, email, path, fitting_code, train_set, delta, alpha=0.0005):
         super().__init__(username, email)
         self.filename = 'submit_fit.sh'
         self.fitting_code = fitting_code
@@ -99,6 +100,7 @@ class SubmitFit(SubmitScript):
         self.delta = delta
         self.alpha = alpha
         self.load_settings()
+        self.write_file(path)
 
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'gsl'])
@@ -113,13 +115,13 @@ class SubmitFit(SubmitScript):
 
 
 class SubmitMolpro(SubmitScript):
-    def __init__(self, username, email, molpro_code, cpu=4):
+    def __init__(self, username, email, path, molpro_code, cpu=4):
         super().__init__(username, email)
         self.filename = 'submit_fit.sh'
         self.energy_code = molpro_code
         self.cpu = str(cpu)
         self.load_settings()
-        print(self.template)
+        self.write_file(path)
 
     def load_settings(self):
         line1 = ' '.join(['module', 'unload', 'mvapich2_ib'])
