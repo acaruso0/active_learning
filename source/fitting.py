@@ -1,8 +1,10 @@
-import os, shutil, io, mmap, re
-import numpy as np
+import os
+import shutil
+import mmap
+import re
+import utils
 import pandas as pd
 import subprocess as sp
-from time import sleep
 from submit import SComputer
 from loader import Loader
 
@@ -10,11 +12,13 @@ from loader import Loader
 class FittingModel(Loader):
     def __init__(self, settings_file="settings.ini"):
         super().__init__(settings_file)
-        self.xyz_test, self.e_test = self.read_data(self.test_file, E_columns=4)
-        self.weights_test, _ = self.get_weights(self.e_test[:, 0], E_min=self.E_min)
+        self.xyz_test, self.e_test = utils.read_data(self.test_file,
+                                                     E_columns=4)
+        self.weights_test, _ = utils.get_weights(self.e_test[:, 0],
+                                                 self.delta_E, self.E_min)
         self.y_test_ref = self.e_test[:, 1]
 
-    # This is the fitting procedure including saving a copy of cdl file to nc file
+    # This is the fitting procedure
     # Output is the training err on each sample and the corresponding weight
     def fit(self, ite=None, file_lbl=None):
         if ite is not None:
@@ -39,7 +43,8 @@ class FittingModel(Loader):
 
         to_sort = {}
         for n in range(self.nfits):
-            path_to_out = os.path.join(self.fit_fold, 'logs', 'fit_' + str(n), 'fit.log')
+            path_to_out = os.path.join(self.fit_fold, 'logs', 'fit_' + str(n),
+                                       'fit.log')
             with open(path_to_out, 'r+') as outfile:
                 outfile = mmap.mmap(outfile.fileno(), 0)
             is_there = re.search(b'converged.*\n', outfile)
@@ -84,10 +89,12 @@ class FittingModel(Loader):
         fit_nc_file = self.fit_fold + self.fit_cdl + '.nc'
         os.chdir(self.fit_fold)
         with open('val_energy' + ite + '.dat', 'w+') as energy_log:
-            p = sp.call([self.eval_exe, fit_nc_file, self.test_file], stdout=energy_log)
+            p = sp.call([self.eval_exe, fit_nc_file, self.test_file],
+                        stdout=energy_log)
         print('evaluate status: ', p)
 
-        y_test_pred = pd.read_csv("val_energy" + ite + ".dat", sep='\s+').iloc[:, 1].values
+        y_test_pred = pd.read_csv("val_energy" + ite + ".dat",
+                                  sep='\s+').iloc[:, 1].values
 
         err = y_test_pred - self.y_test_ref
         weights = self.weights_test

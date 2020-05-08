@@ -129,3 +129,7 @@ e_B_B_qz=energy
 EXTRAP
 
 e_B_B_cbs=E_HF_CBS+E_CCSD_CBS+E_T_CBS
+
+IE_tz=(e_AB_AB_tz-e_A_A_tz-e_B_B_tz)*tokcal
+IE_qz=(e_AB_AB_qz-e_A_A_qz-e_B_B_qz)*tokcal
+IE_cbs=(e_AB_AB_cbs-e_A_A_cbs-e_B_B_cbs)*tokcal

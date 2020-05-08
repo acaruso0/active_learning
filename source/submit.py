@@ -1,4 +1,5 @@
-import os, io
+import os
+import io
 import pandas as pd
 import numpy as np
 import subprocess as sp
@@ -82,7 +83,8 @@ class SubmitMain(SubmitScript):
         line1 = ' '.join(['module', 'load', 'python'])
         line2 = ' '.join(['module', 'load', 'gsl'])
         line3 = ' '.join(['module', 'load', 'netcdf'])
-        line4 = ' '.join(['python3', 'AL_framework.py', '>', 'stdout', '2>', 'stderr'])
+        line4 = ' '.join(['python3', 'AL_framework.py', '>', 'stdout', '2>',
+                          'stderr'])
         command = '\n'.join([line1, line2, line3, line4])
 
         self.template = self.template.replace('$JOBNAME', 'act_learn')
@@ -92,7 +94,8 @@ class SubmitMain(SubmitScript):
 
 
 class SubmitFit(SubmitScript):
-    def __init__(self, username, email, path, fitting_code, train_set, delta, alpha=0.0005):
+    def __init__(self, username, email, path, fitting_code, train_set, delta,
+                 alpha=0.0005):
         super().__init__(username, email)
         self.filename = 'submit_fit.sh'
         self.fitting_code = fitting_code
@@ -105,7 +108,9 @@ class SubmitFit(SubmitScript):
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'gsl'])
         line2 = ' '.join(['module', 'load', 'netcdf'])
-        line3 = ' '.join([self.fitting_code, self.train_set, str(self.delta), str(self.alpha), '>', 'fit.log', '2>', 'fit.err'])
+        submit_lst = [self.fitting_code, self.train_set, str(self.delta),
+                      str(self.alpha), '>', 'fit.log', '2>', 'fit.err']
+        line3 = ' '.join(submit_lst)
         command = '\n'.join([line1, line2, line3])
 
         self.template = self.template.replace('$JOBNAME', 'fit')
@@ -124,12 +129,14 @@ class SubmitMolpro(SubmitScript):
         self.write_file(path)
 
     def load_settings(self):
-        tempdir = os.path.join(['oasis', 'scratch', 'comet', self.username, 'temp_project', 'batch_serial.XXXXXXXX'])
+        tempdir = os.path.join(['oasis', 'scratch', 'comet', self.username,
+                                'temp_project', 'batch_serial.XXXXXXXX'])
         line1 = ' '.join(['module', 'unload', 'mvapich2_ib'])
         line2 = ' '.join(['module', 'load', 'lapack'])
         line3 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`'])
         line4 = ' '.join(['SCRATCH=`mktemp', '-d', tempdir + '`'])
-        line5 = ' '.join([self.energy_code, '-n', self.cpu, '-o', 'input.log', '-d', '"${SCRATCH}"', 'input'])
+        line5 = ' '.join([self.energy_code, '-n', self.cpu, '-o', 'input.log',
+                          '-d', '"${SCRATCH}"', 'input'])
         line6 = ' '.join(['rm', '-rf', '"${SCRATCH}"'])
         command = '\n'.join([line1, line2, line3, line4, line5, line6])
 
