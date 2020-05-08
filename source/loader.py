@@ -1,9 +1,11 @@
+import os, copy, pickle
 import pandas as pd
 import numpy as np
 import subprocess as sp
 import configparser
 from sklearn.gaussian_process import GaussianProcessRegressor as GPR
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from fitting import FittingModel
 
 
 class Learner():
@@ -15,9 +17,37 @@ class Learner():
     def load(self):
         config = configparser.ConfigParser()
         config.read(self.settings)
-        self.delta_E = config.getfloat("fitting", "delta_E")
+        self.main = os.getcwd()
+        self.file_train = os.path.join([self.main, config.get("locations", "train_set")])
+        self.file_train = os.path.join([self.main, config.get("locations", "test_set")])
+        self.desc_file = os.path.join([self.main, config.get("locations", "desc_file")])
+        self.fit_fold = [self.main, 'fitting']
+        self.fit_code = config.get("locations", 'fitting_code')
+        self.fit_exe = config.get("locations", "fit_exe")
+        self.eval_exe = config.get("locations", "eval_exe")
+        self.calculations = os.path.join([self.main, "calculations"])
+        self.output = os.path.join([self.main, "output"])
 
-    def read_data(self, xyz_path, picked_idx=[], energies=True):
+        self.username = config.get("account", "username")
+        self.email = config.get("account", "email")
+
+        self.E_min = config.getfloat("fitting", "E_min")
+        self.delta_E = config.getfloat("fitting", "delta_E")
+        self.nfits = config.getint("fitting", "nfits")
+
+        self.t = config.getint("iterations", "t")
+        self.tmax = config.getint("iterations", "tmax")
+        self.batch = config.getint("iterations", "batch")
+        self.first_batch = config.getint("iterations", "first_batch")
+        self.restart = config.getboolean("iterations", "restart")
+        if self.restart:
+            self.restart_file = config.get("iterations", "restart_file")
+
+        self.cluster_sz = config.getint("active learning", "cluster_sz")
+        self.STD_w = config.getfloat("active learning", "STD_w")
+        self.TRAINERR_w = config.getfloat("active learning", "TRAINERR_w")
+
+    def read_data(self, xyz_path, picked_idx=[], energies=False):
         command = F'head -n 2 {xyz_path} | tail -n 1'
         call = sp.Popen(command, shell=True, stdout=sp.PIPE)
         E_columns = len(call.communicate()[0].split())
@@ -73,9 +103,7 @@ class Learner():
     def generate_set(self, infile=None, outfile='set.xyz', picked_idx=[]):
         try:
             data = pd.read_csv(infile, sep='\s+', names=range(4))
-
             Natom = int(data.iloc[0][0])
-
             with open(outfile, 'w') as f:
                 for i in picked_idx:
                     line_start = i * (Natom + 2)
@@ -89,13 +117,11 @@ class Learner():
                                     print(' {0:s} '.format(str(d)), end='\t', file=f)  # energies
                             except:
                                 print(' {0:s} '.format(str(d)), end='\t', file=f)  # energies
-
                         print(' ', end='\n', file=f)
                         for a in range(Natom):
                             for d in data.iloc[line_start+2+a, :]:
                                 print(' {0:s} '.format(str(d)), end='\t', file=f)
                             print('', end='\n', file=f)
-
                     except:
                         continue
             return True
@@ -104,56 +130,52 @@ class Learner():
         return None
 
     def prepare(self):
-        # Initialization
-        # Gaussian Kernel
-        kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))   # a common Gaussian kernel
-        gp = GPR(kernel=kernel, n_restarts_optimizer=9, alpha=1e-6)
+        self.kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))
+        self.gp = GPR(kernel=self.kernel, n_restarts_optimizer=9, alpha=1e-6)
+        self.model = FittingModel(self.main, self.fit_exe, self.eval_exe)
 
-        # the fitting code used in AL, including both fitting and evaluating parts
-        model = fitting_model(fit_fold, fit_cdl, eval_exe)
+        _, self.coords = self.read_data(self.file_train)
+        with open(self.desc_file, 'rb') as pickled:
+            self.X_train = pickle.load(pickled)
+        self.Y_train = np.zeros(self.X_train.shape[0])
 
-        coords = readxyz(file_train_pool, atom_lbl)
-        with open(desc_file, 'rb') as pickled:
-            X_train = pickle.load(pickled)
-        Y_train = np.zeros(X_train.shape[0])  # energy placeholder for the training set
+        self.idx_all = np.arange(self.X_train.shape[0])
+        self.idx_left = copy.deepcopy(self.idx_all)
+        self.idx_now = self.idx_all[~np.in1d(self.idx_all, self.idx_left)]
+        # idx_failed = np.ones(idx_all.shape[0], dtype=bool)
+        self.err_train = np.zeros_like(self.idx_all, dtype=float)
 
-        idx_all = np.arange(X_train.shape[0])     # INDEX of all samples in the pool
-        idx_left = copy.deepcopy(idx_all)          # INDEX of samples left in the pool at current iteration
-        idx_now = idx_all[~np.in1d(idx_all, idx_left)]  # INDEX of samples in the current training set
-        #idx_failed = np.ones(idx_all.shape[0], dtype=bool)
-        err_train = np.zeros_like(idx_all, dtype=float)  # placeholder for training error on each sample in the pool
+        os.makedirs(self.output, exist_ok=True)
 
-        os.makedirs(output_folder, exist_ok=True)
-
-        write_energy_file(file_test, output_folder + 'val_refer.dat', col_to_write=1) # CHECK COLUMN NUMBER
-        model.init(output_folder, file_test, E_min)
-        file_train_tmp = '_trainset_tmp.xyz'
+        self.write_energy_file(self.file_test, self.output + 'val_refer.dat', col_to_write=1)
+        self.model.init(self.output, self.file_test, self.E_min)
+        self.file_train_tmp = '_trainset_tmp.xyz'
 
         # Logfile
-        logfile = output_folder + '_PickSet.log'
+        self.logfile = self.output + '_PickSet.log'
         to_log = ['Iteration' 'TrainSet_Size', 'Leftover_Size',
                   'Train_MSE', 'Train_wMSE', 'Test_MSE', 'Test_wMSE',
                   'Fitting[s]',
-                 ]
-        with open(logfile, 'w') as f:
+                  ]
+        with open(self.logfile, 'w') as f:
             for key in to_log:
                 print(key, end='\t', file=f)
             print('', end='\n', file=f)
 
         # saving settings
         to_record = {
-            'Nr of samples in first iteration': sample_first_ite,
-            'Nr of samples picked in other iterations': sample_chose_per_ite,
-            'cluster size': cluster_size,
-            'STD weight': STD_weight,
-            'TRAIN ERROR weight': TRAINERR_weight,
-            'Used Guassian Process model': gp,
+            'Nr of samples in first iteration': self.first_batch,
+            'Nr of samples picked in other iterations': self.batch,
+            'cluster size': self.cluster_sz,
+            'STD weight': self.STD_w,
+            'TRAIN ERROR weight': self.TRAINERR_w,
+            'Used Guassian Process model': self.gp,
         }
 
-        with open(output_folder+'_setting.ini', 'w') as f:
+        with open(self.output + '_setting.ini', 'w') as f:
             for key, value in to_record.items():
                 try:
-                    print(key + '\t' + str(value), end='\n', file = f )
+                    print(key + '\t' + str(value), end='\n', file=f)
                 except:
-                    print(key, end='\n', file = f)
-                    print(value, end='\n', file = f)
+                    print(key, end='\n', file=f)
+                    print(value, end='\n', file=f)

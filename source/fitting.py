@@ -5,9 +5,8 @@ import subprocess as sp
 from time import sleep
 
 
-class fitting_model:
+class FittingModel:
     def __init__(self, fit_fold=None, fit_cdl=None, eval_exe=None):
-
         self.fit_fold = fit_fold
         self.fit_cdl = fit_cdl
         self.eval_exe = eval_exe

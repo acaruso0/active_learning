@@ -50,11 +50,11 @@ class SComputer():
         return None
 
 
-class SubmitFile():
-    def __init__(self, username, domain):
+class SubmitScript():
+    def __init__(self, username, email):
         self.filename = ''
         self.username = username
-        self.email = self.username + domain
+        self.email = email
         self.load()
 
     def load(self):
@@ -71,9 +71,9 @@ class SubmitFile():
         return None
 
 
-class SubmitMain(SubmitFile):
-    def __init__(self, username, domain):
-        super().__init__(username, domain)
+class SubmitMain(SubmitScript):
+    def __init__(self, username, email):
+        super().__init__(username, email)
         self.filename = 'submit.sh'
         self.load_settings()
 
@@ -90,9 +90,9 @@ class SubmitMain(SubmitFile):
         self.template = self.template.replace('$COMMAND', command)
 
 
-class SubmitFit(SubmitFile):
-    def __init__(self, username, domain, fitting_code, train_set, delta, alpha=0.0005):
-        super().__init__(username, domain)
+class SubmitFit(SubmitScript):
+    def __init__(self, username, email, fitting_code, train_set, delta, alpha=0.0005):
+        super().__init__(username, email)
         self.filename = 'submit_fit.sh'
         self.fitting_code = fitting_code
         self.train_set = train_set
@@ -112,9 +112,9 @@ class SubmitFit(SubmitFile):
         self.template = self.template.replace('$COMMAND', command)
 
 
-class SubmitMolpro(SubmitFile):
-    def __init__(self, username, domain, molpro_code, cpu=4):
-        super().__init__(username, domain)
+class SubmitMolpro(SubmitScript):
+    def __init__(self, username, email, molpro_code, cpu=4):
+        super().__init__(username, email)
         self.filename = 'submit_fit.sh'
         self.energy_code = molpro_code
         self.cpu = str(cpu)
@@ -134,4 +134,3 @@ class SubmitMolpro(SubmitFile):
         self.template = self.template.replace('$CPU', self.cpu)
         self.template = self.template.replace('$HOURS', '2')
         self.template = self.template.replace('$COMMAND', command)
-
