@@ -26,15 +26,6 @@ class Learner(Settings):
         np.savetxt(outfile,  e[:, col_to_write], delimiter='    ')
         return True
 
-    def get_weights(self, E,  E_min=None):
-        if E_min is None:
-            E_min = np.min(E)
-        w = np.square(self.delta_E/(E - E_min + self.delta_E))
-        w_mean = np.mean(w)
-        w /= w_mean
-
-        return w, E_min
-
     def generate_set(self, infile=None, outfile='set.xyz', picked_idx=[]):
         try:
             data = pd.read_csv(infile, sep='\s+', names=range(4))

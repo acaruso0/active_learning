@@ -69,3 +69,12 @@ class Settings():
             return at_list, xyz, E
         else:
             return at_list, xyz
+
+    def get_weights(self, E,  E_min=None):
+        if E_min is None:
+            E_min = np.min(E)
+        w = np.square(self.delta_E/(E - E_min + self.delta_E))
+        w_mean = np.mean(w)
+        w /= w_mean
+
+        return w, E_min

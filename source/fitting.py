@@ -5,8 +5,9 @@ import subprocess as sp
 from time import sleep
 
 
-class FittingModel:
-    def __init__(self, fit_fold=None, fit_cdl=None, eval_exe=None):
+class FittingModel():
+    def __init__(self, fit_fold=None, fit_cdl=None, eval_exe=None, settings_file="settings.ini"):
+        super().__init__(settings_file)
         self.fit_fold = fit_fold
         self.fit_cdl = fit_cdl
         self.eval_exe = eval_exe
@@ -15,8 +16,8 @@ class FittingModel:
         self.running_folder = folder
         self.test_file = test_file
         self.E_min = E_min
-        self.xyz_test, self.e_test = read_data(test_file, E_columns=4)
-        self.weights_test, _ = get_weights(self.e_test[:, 0], E_min=E_min)
+        self.xyz_test, self.e_test = self.read_data(test_file, E_columns=4)
+        self.weights_test, _ = self.get_weights(self.e_test[:, 0], E_min=E_min)
         self.y_test_ref = self.e_test[:, 1]
 
     # This is the fitting procedure including saving a copy of cdl file to nc file
@@ -30,7 +31,7 @@ class FittingModel:
             os.mkdir('fit_' + str(n))
             os.chdir('fit_' + str(n))
             # trainset = os.path.join(self.fit_fold, file_lbl)
-            job = sp.Popen(["sbatch", submit_fit], stdout=sp.PIPE)
+            job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
             check = job.communicate()[0]
 
             while b'Submitted batch job' not in check:
@@ -76,7 +77,7 @@ class FittingModel:
             check = self.check()
 
         to_sort = {}
-        for n in range(nfits):
+        for n in range(self.nfits):
             path_to_out = os.path.join(self.fit_fold, 'logs', 'fit_' + str(n), 'fit.log')
             with open(path_to_out, 'r+') as outfile:
                 outfile = mmap.mmap(outfile.fileno(), 0)
