@@ -4,21 +4,14 @@ import pandas as pd
 import subprocess as sp
 from time import sleep
 from submit import SComputer
+from loader import Loader
 
 
-class FittingModel():
-    def __init__(self, fit_fold=None, fit_cdl=None, eval_exe=None, settings_file="settings.ini"):
+class FittingModel(Loader):
+    def __init__(self, settings_file="settings.ini"):
         super().__init__(settings_file)
-        self.fit_fold = fit_fold
-        self.fit_cdl = fit_cdl
-        self.eval_exe = eval_exe
-
-    def init(self, folder=None, test_file=None, E_min=None):
-        self.running_folder = folder
-        self.test_file = test_file
-        self.E_min = E_min
-        self.xyz_test, self.e_test = self.read_data(test_file, E_columns=4)
-        self.weights_test, _ = self.get_weights(self.e_test[:, 0], E_min=E_min)
+        self.xyz_test, self.e_test = self.read_data(self.test_file, E_columns=4)
+        self.weights_test, _ = self.get_weights(self.e_test[:, 0], E_min=self.E_min)
         self.y_test_ref = self.e_test[:, 1]
 
     # This is the fitting procedure including saving a copy of cdl file to nc file
@@ -37,13 +30,12 @@ class FittingModel():
         os.mkdir('logs')
         os.chdir('logs')
 
-        submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
-        jobs = self.run(self.pick, submit_fit)
+        SComputer(os.getcwd(), self.username)
 
-        check = self.check()
-        while np.isin(check, jobs).any():
-            sleep(60)
-            check = self.check()
+        submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
+
+        SComputer.run(list(range(self.nfits)), submit_fit)
+        SComputer.check()
 
         to_sort = {}
         for n in range(self.nfits):

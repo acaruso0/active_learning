@@ -5,7 +5,7 @@ import subprocess as sp
 import configparser
 
 
-class Settings():
+class Loader():
     def __init__(self, settings_file="settings.ini"):
         self.settings = settings_file
         self.load()
