@@ -111,5 +111,25 @@ class SubmitFit(SubmitFile):
         self.template = self.template.replace('$HOURS', '2')
         self.template = self.template.replace('$COMMAND', command)
 
+class SubmitMolpro(SubmitFile):
+    def __init__(self, username, domain, molpro_code, cpu=4):
+        super().__init__(username, domain)
+        self.filename = 'submit_fit.sh'
+        self.energy_code = molpro_code
+        self.cpu = str(cpu)
+        self.load_settings()
+        print(self.template)
 
-test = SubmitFit("acaruso", "@ucsd.edu", '/oasis/blabla/fit-2b', 'training_set.xyz', 30)
+    def load_settings(self):
+        line1 = ' '.join(['module', 'unload', 'mvapich2_ib'])
+        line2 = ' '.join(['module', 'load', 'lapack'])
+        line3 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`'])
+        line4 = ' '.join(['SCRATCH=`mktemp', '-d', '/oasis/scratch/comet/' + self.username + '/temp_project/batch_serial.XXXXXXXX`'])
+        line5 = ' '.join([self.energy_code, '-n', self.cpu, '-o', 'input.log', '-d', '"${SCRATCH}"', 'input'])
+        line6 = ' '.join(['rm', '-rf', '"${SCRATCH}"'])
+        command = '\n'.join([line1, line2, line3, line4, line5, line6])
+
+        self.template = self.template.replace('$JOBNAME', 'molpro')
+        self.template = self.template.replace('$CPU', self.cpu)
+        self.template = self.template.replace('$HOURS', '2')
+        self.template = self.template.replace('$COMMAND', command)
