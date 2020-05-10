@@ -3,3 +3,5 @@ fitting_code
 mbtr_list
 test_set.xyz
 training_set.xyz
+source/__pycache__
+__pycache__

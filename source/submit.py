@@ -18,6 +18,10 @@ class SComputer():
 
         for i in job_lst:
             pick_fld = os.path.join(self.path, str(i))
+            try:
+                os.mkdir(pick_fld)
+            except:
+                pass
             os.chdir(pick_fld)
             job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
             check = job.communicate()[0]
@@ -38,7 +42,6 @@ class SComputer():
         check = sp.Popen(check_str, stdout=sp.PIPE)
         out_str = io.StringIO(check.communicate()[0].decode('utf-8'))
         df = pd.read_csv(out_str, sep='\s+')
-
         return df['JOBID'].to_numpy().astype(int)
 
     def check(self):
@@ -47,7 +50,6 @@ class SComputer():
             sleep(60)
             rjobs = self.running_jobs()
         self.jobs = None
-
         return None
 
 
@@ -56,19 +58,17 @@ class SubmitScript():
         self.filename = ''
         self.username = username
         self.email = email
-        self.load()
+        self.load_template()
 
-    def load(self):
+    def load_template(self):
         with open('job_template', 'r') as job_temp:
-            job_temp = job_temp.read()
-        self.template = job_temp.replace('$EMAIL', self.email)
-
+            self.template = job_temp.read()
+        self.template = self.template.replace('$EMAIL', self.email)
         return None
 
     def write_file(self, path):
         with open(os.path.join([path, self.filename]), 'w+') as submit_file:
             submit_file.writelines(self.template)
-
         return None
 
 
@@ -129,8 +129,8 @@ class SubmitMolpro(SubmitScript):
         self.write_file(path)
 
     def load_settings(self):
-        tempdir = os.path.join(['oasis', 'scratch', 'comet', self.username,
-                                'temp_project', 'batch_serial.XXXXXXXX'])
+        tempdir = os.path.join('oasis', 'scratch', 'comet', self.username,
+                               'temp_project', 'batch_serial.XXXXXXXX')
         line1 = ' '.join(['module', 'unload', 'mvapich2_ib'])
         line2 = ' '.join(['module', 'load', 'lapack'])
         line3 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`'])

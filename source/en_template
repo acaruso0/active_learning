@@ -18,7 +18,7 @@ ENDPROC
 SYMMETRY,NOSYM
 geomtyp=xyz
 geometry={
-$GEOMETRY_12
+$GEOMETRY_TOT
 }
 
 basis={
@@ -60,10 +60,10 @@ $GEOMETRY_1
 }
 
 basis={
-default=avtz
+default=avtz Br=aug-cc-pvtz-PP I=aug-cc-pvtz-PP
 }
 
-CHARGE=0,SPIN=0
+CHARGE=-1,SPIN=0
 hf
 HF_LOW=ENERGY
 {mp2}
@@ -75,10 +75,10 @@ e_A_A_tz=energy
 
 
 basis={
-default=avqz
+default=avqz Br=aug-cc-pvqz-PP I=aug-cc-pvqz-PP
 }
 
-CHARGE=0,SPIN=0
+CHARGE=-1,SPIN=0
 hf
 HF_HIGH=ENERGY
 {mp2}
@@ -98,10 +98,10 @@ $GEOMETRY_2
 }
 
 basis={
-default=avtz Br=aug-cc-pvtz-PP I=aug-cc-pvtz-PP
+default=avtz
 }
 
-CHARGE=-1,SPIN=0
+CHARGE=0,SPIN=0
 hf
 HF_LOW=ENERGY
 {mp2}
@@ -113,10 +113,10 @@ e_B_B_tz=energy
 
 
 basis={
-default=avqz Br=aug-cc-pvqz-PP I=aug-cc-pvqz-PP
+default=avqz
 }
 
-CHARGE=-1,SPIN=0
+CHARGE=0,SPIN=0
 hf
 HF_HIGH=ENERGY
 {mp2}
@@ -129,6 +129,7 @@ e_B_B_qz=energy
 EXTRAP
 
 e_B_B_cbs=E_HF_CBS+E_CCSD_CBS+E_T_CBS
+
 
 IE_tz=(e_AB_AB_tz-e_A_A_tz-e_B_B_tz)*tokcal
 IE_qz=(e_AB_AB_qz-e_A_A_qz-e_B_B_qz)*tokcal

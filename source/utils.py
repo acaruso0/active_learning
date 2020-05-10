@@ -3,32 +3,40 @@ import pandas as pd
 import subprocess as sp
 
 
-def read_data(xyz_path, picked_idx=[], energies=False):
+def atoms(xyz_path, natoms):
+    command = F'head -n 2 {xyz_path} | tail -n 1'
+    call = sp.Popen(command, shell=True, stdout=sp.PIPE)
+    E_columns = len(call.communicate()[0].split())
+
+    coords = pd.read_csv(xyz_path, sep='\s+',
+                         names=range(max(E_columns, 4)), nrows=natoms+2)
+    xyz = coords.iloc[coords.index % (natoms + 2) > 1, :].copy()
+
+    at_list = xyz.loc[:natoms + 1, 0:0].values
+    at_list = at_list.reshape(natoms)
+    return at_list
+
+
+def read_data(xyz_path, picked_idx=[]):
     command = F'head -n 2 {xyz_path} | tail -n 1'
     call = sp.Popen(command, shell=True, stdout=sp.PIPE)
     E_columns = len(call.communicate()[0].split())
 
     coords = pd.read_csv(xyz_path, sep='\s+', names=range(max(E_columns, 4)))
     natoms = int(coords.iloc[0][0])
-    xyz = coords.iloc[coords.index % (natoms + 2) > 1, :].copy()
 
-    at_list = xyz.loc[:natoms + 1, 0:0].values
-    at_list = at_list.reshape(natoms)
+    xyz = coords.iloc[coords.index % (natoms + 2) > 1, :].copy()
     xyz = xyz.loc[:, 1:4].values
     xyz = xyz.reshape((-1, natoms, 3))
 
+    E = coords.iloc[coords.index % (natoms+2) == 1, :].copy()
+    E = E.iloc[:, :E_columns].values
+    E = E.astype(np.float)
+
     if (len(picked_idx) > 0):
         xyz = xyz[picked_idx, :]
-
-    if energies:
-        E = coords.iloc[coords.index % (natoms+2) == 1, :].copy()
-        E = E.iloc[:, :E_columns].values
-        E = E.astype(np.float)
-        if (len(picked_idx) > 0):
-            E = E[picked_idx, :]
-        return at_list, xyz, E
-    else:
-        return at_list, xyz
+        E = E[picked_idx, :]
+    return xyz, E
 
 
 def get_weights(E, delta_E, E_min=None):
@@ -37,7 +45,6 @@ def get_weights(E, delta_E, E_min=None):
     w = np.square(delta_E/(E - E_min + delta_E))
     w_mean = np.mean(w)
     w /= w_mean
-
     return w, E_min
 
 

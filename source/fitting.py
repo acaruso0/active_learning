@@ -3,6 +3,7 @@ import shutil
 import mmap
 import re
 import utils
+import numpy as np
 import pandas as pd
 import subprocess as sp
 from submit import SComputer
@@ -10,8 +11,8 @@ from loader import Loader
 
 
 class FittingModel(Loader):
-    def __init__(self, settings_file="settings.ini"):
-        super().__init__(settings_file)
+    def __init__(self):
+        super().__init__()
         self.xyz_test, self.e_test = utils.read_data(self.test_file,
                                                      E_columns=4)
         self.weights_test, _ = utils.get_weights(self.e_test[:, 0],
@@ -73,9 +74,8 @@ class FittingModel(Loader):
         corr_file = os.path.join(fold_best_fit, 'correlation.dat')
         train_err = pd.read_csv(corr_file, sep='\s+', header=None)
 
-        err = train_err.iloc[:, 3]
-
-        return err
+        err_sq = np.sqrt(train_err.iloc[:, 3])
+        return err_sq
 
     # test/evaluation stage
     # Output is the test error on each sample and the corresponding weight
@@ -98,5 +98,4 @@ class FittingModel(Loader):
 
         err = y_test_pred - self.y_test_ref
         weights = self.weights_test
-
         return err, weights

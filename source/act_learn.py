@@ -12,15 +12,15 @@ from submit import SubmitFit
 
 
 class Learner(Loader):
-    def __init__(self, settings_file="settings.ini"):
-        super().__init__(settings_file)
+    def __init__(self):
+        super().__init__()
 
     def prepare(self):
         self.kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))
         self.gp = GPR(kernel=self.kernel, n_restarts_optimizer=9, alpha=1e-6)
         self.model = FittingModel(self.main, self.fit_exe, self.eval_exe)
 
-        _, self.coords = utils.read_data(self.file_train)
+        self.coords, _ = utils.read_data(self.file_train)
         with open(self.desc_file, 'rb') as pickled:
             self.X_train = pickle.load(pickled)
         self.Y_train = np.zeros(self.X_train.shape[0])
@@ -81,7 +81,7 @@ class Learner(Loader):
             self.idx_left = self.idx_left[~np.in1d(self.idx_left,
                                                    self.idx_now)]
 
-        #while idx_left.shape[0] > 0:
+        # while idx_left.shape[0] > 0:
         while self.t < self.tmax:
             print('Start iteration: ', t)
 
@@ -89,13 +89,15 @@ class Learner(Loader):
 
             if (idx_now is None) or (idx_now.shape[0] == 0):
         # first iteration: choose sufficient samples for the first run
-                idx_pick = np.random.choice(idx_left, sample_first_ite, replace=False)
+                idx_pick = np.random.choice(idx_left, sample_first_ite,
+                                            replace=False)
 
             else:
         # other iterations:  Pool selection by probability
             # step 1: clustering current training set
                 NCluster = int(idx_now.shape[0] / cluster_size)
-                cls = KMeans(n_clusters = NCluster, init='k-means++', precompute_distances=True, copy_x=True)
+                cls = KMeans(n_clusters = NCluster, init='k-means++',
+                             precompute_distances=True, copy_x=True)
                 lab_now = cls.fit_predict(X_train[idx_now])
             # predict the label of current candidates
                 idx_cand = idx_left #
@@ -107,7 +109,8 @@ class Learner(Loader):
                     idx_now_with_this_label = idx_now[lab_now == l]
                     idx_cand_with_this_label = idx_cand[lab_cand == l]
 
-                    gp.fit(X_train[idx_now_with_this_label, :], Y_train[idx_now_with_this_label])
+                    gp.fit(X_train[idx_now_with_this_label, :],
+                           Y_train[idx_now_with_this_label])
                     prd_cand_with_this_label, uct_cand_with_this_label = gp.predict(X_train[idx_cand_with_this_label], return_std=True)
             # step 3: update selection probability
                     p_err = np.average(err_train[idx_now_with_this_label])
@@ -118,7 +121,8 @@ class Learner(Loader):
                 #p_chose_tmp[p_chose_tmp < 1e-4] = 1e-4 # Set the lowest probability
                 p_chose_tmp = p_chose_tmp / np.sum(p_chose_tmp)
 
-                idx_pick = np.random.choice(idx_cand, nr_pick, replace=False, p=p_chose_tmp)
+                idx_pick = np.random.choice(idx_cand, nr_pick, replace=False,
+                                            p=p_chose_tmp)
 
             # update energy of those samples newly put into training set
             idx_left = idx_left[~np.in1d(idx_left, idx_pick)]
@@ -141,9 +145,10 @@ class Learner(Loader):
             train_weights, _ = get_weights(Y_train[idx_now])
 
             print("Fitting the model...")
-            train_err = model.fit(ite=t, file_lbl='new_training_set.xyz')#output_folder+file_train_tmp)
-            err_train[idx_now] = np.abs(train_err) * np.sqrt(train_weights)  # use either weighted training error or non-weighted training error
-
+            # output_folder+file_train_tmp)
+            train_err = model.fit(ite=t, file_lbl='new_training_set.xyz')
+            # use either weighted training error or non-weighted training error
+            err_train[idx_now] = np.abs(train_err) * np.sqrt(train_weights)
             # section: create new training set and train the model
             print("Creating restart file...")
             file_train_idx = 'trainset_' + str(t) + '.RESTART'
@@ -151,16 +156,17 @@ class Learner(Loader):
             restart_file['idx'] = idx_now
             restart_file['energy'] = Y_train[idx_now]
             restart_file['error'] = err_train[idx_now]
-            restart_file.to_csv(output_folder + file_train_idx, sep='\t', index=False)
+            restart_file.to_csv(output_folder + file_train_idx, sep='\t',
+                                index=False)
 
             # section: evaluate current trained model
             test_err, test_weights = model.evaluate(ite=t)
 
-            train_mse = np.mean(np.square(train_err))
-            train_wmse = np.mean(np.square(train_err) * train_weights)
+            train_mse = np.sqrt(np.mean(np.square(train_err)))
+            train_wmse = np.sqrt(np.mean(np.square(train_err) * train_weights))
 
-            test_mse = np.mean(np.square(test_err))
-            test_wmse = np.mean(np.square(test_err) * test_weights)
+            test_mse = np.sqrt(np.mean(np.square(test_err)))
+            test_wmse = np.sqrt(np.mean(np.square(test_err) * test_weights))
 
             toc = time.time()
             print('time consumed this iteration [s]: ', toc-tic)
