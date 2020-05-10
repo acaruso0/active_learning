@@ -19,9 +19,9 @@ class Energy(Loader):
     def calculate_energy(self):
         self.split()
         submit_calc = os.path.join(self.calculations, "submit_calc.sh")
-        SComputer(self.calculations, self.username)
-        SComputer.run(self.pick, submit_calc)
-        SComputer.check()
+        instance = SComputer(self.calculations)
+        instance.run(self.pick, submit_calc)
+        instance.check()
 
         it_fld = os.path.join(self.calculations, 'it_' + str(self.t))
         os.mkdir(it_fld)
@@ -53,7 +53,7 @@ class Energy(Loader):
                     infile.write(F'{atom} {self.coords[n][atom_n][0]} '
                                  + F'{self.coords[n][atom_n][1]} '
                                  + F'{self.coords[n][atom_n][2]}\n')
-            self.InputMolpro(self.coords[n], pick_fld)
+            InputMolpro(self.coords[n], pick_fld)
         return None
 
     def extract(self, idx_pick):
@@ -106,7 +106,7 @@ class _InputFile(Loader):
         return None
 
     def write_file(self):
-        with open(os.path.join([self.pick_fld, "input"]), 'w+') as input_file:
+        with open(os.path.join(self.pick_fld, "input"), 'w+') as input_file:
             input_file.writelines(self.template)
         return None
 

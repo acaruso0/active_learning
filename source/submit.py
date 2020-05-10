@@ -64,7 +64,7 @@ class _SubmitScript(Loader):
         return None
 
     def write_file(self):
-        with open(os.path.join([self.path, self.filename]), 'w+') as submit_file:
+        with open(os.path.join(self.path, self.filename), 'w+') as submit_file:
             submit_file.writelines(self.template)
         return None
 

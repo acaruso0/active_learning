@@ -33,13 +33,10 @@ class FittingModel(Loader):
             shutil.rmtree('logs')
         os.mkdir('logs')
         os.chdir('logs')
-
-        SComputer(os.getcwd(), self.username)
-
         submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
-
-        SComputer.run(list(range(self.nfits)), submit_fit)
-        SComputer.check()
+        instance = SComputer(os.getcwd(), self.username)
+        instance.run(list(range(self.nfits)), submit_fit)
+        instance.check()
 
         to_sort = {}
         for n in range(self.nfits):

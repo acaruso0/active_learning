@@ -39,15 +39,15 @@ class Learner(Loader):
         os.makedirs(self.output, exist_ok=True)
         os.makedirs(self.calculations, exist_ok=True)
 
-        utils.write_energy_file(self.file_test, self.output + 'val_refer.dat',
-                                col_to_write=1)
+        utils.write_energy_file(self.file_test, os.path.join(self.output,
+                                'val_refer.dat'), col_to_write=1)
         self.file_train_tmp = '_trainset_tmp.xyz'
 
         SubmitFit(self.fit_fold)
         SubmitMolpro(self.calculations)
 
         # Logfile
-        self.logfile = self.output + '_PickSet.log'
+        self.logfile = os.path.join(self.output, '_PickSet.log')
         to_log = ['Iteration' 'TrainSet_Size', 'Leftover_Size',
                   'Train_MSE', 'Train_wMSE', 'Test_MSE', 'Test_wMSE',
                   'Fitting[s]',
@@ -67,7 +67,7 @@ class Learner(Loader):
             'Used Guassian Process model': self.gp,
         }
 
-        with open(self.output + '_setting.ini', 'w') as f:
+        with open(os.path.join(self.output, '_setting.ini'), 'w') as f:
             for key, value in to_record.items():
                 try:
                     print(key + '\t' + str(value), end='\n', file=f)
