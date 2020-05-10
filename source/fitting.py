@@ -6,7 +6,7 @@ import utils
 import numpy as np
 import pandas as pd
 import subprocess as sp
-from submit import SComputer
+from submit import SComputer, SubmitFit
 from loader import Loader
 
 
@@ -21,7 +21,7 @@ class FittingModel(Loader):
 
     # This is the fitting procedure
     # Output is the training err on each sample and the corresponding weight
-    def fit(self, ite=None, file_lbl=None):
+    def fit(self, ite=None):
         if ite is not None:
             ite = '_' + str(ite)
         else:
@@ -29,6 +29,7 @@ class FittingModel(Loader):
 
         # Next line: command to run the fitting code
         os.chdir(self.fit_fold)
+        SubmitFit()
 
         if os.path.exists('logs'):
             shutil.rmtree('logs')

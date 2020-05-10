@@ -55,7 +55,7 @@ class Energy(Loader):
                     infile.write(F'{atom} {self.coords[n][atom_n][0]} '
                                  + F'{self.coords[n][atom_n][1]} '
                                  + F'{self.coords[n][atom_n][2]}\n')
-            self.create_input(self.coords[n], pick_fld)
+            self.InputMolpro(self.coords[n], pick_fld)
         return None
 
     def extract(self, idx_pick):
@@ -95,7 +95,7 @@ class Energy(Loader):
         return energies
 
 
-class InputFile(Loader):
+class _InputFile(Loader):
     def __init__(self, conf, pick_fld):
         super().__init__()
         self.conf = conf
@@ -113,22 +113,20 @@ class InputFile(Loader):
         return None
 
 
-class InputMolpro(InputFile):
+class InputMolpro(_InputFile):
     def __init__(self, conf, pick_fld):
         super().__init__(conf, pick_fld)
         self.load_settings()
+        self.write_file()
 
     def load_settings(self):
         slices = np.insert(np.cumsum(self.molecules), 0, 0)
 
         df = pd.DataFrame(self.conf, index=self.atoms)
-        self.template = self.template.replace('$GEOMETRY_TOT', df.to_string(header=False))
+        self.template = self.template.replace('$GEOMETRY_TOT',
+                                              df.to_string(header=False))
         for n in range(slices.shape[0]-1):
-            df = pd.DataFrame(self.conf, index=self.atoms)[slices[n]:slices[n+1]]
-            self.template = self.template.replace(F'$GEOMETRY_{n+1}', df.to_string(header=False))
-
-
-testconf = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
-
-test = InputMolpro(testconf, 2)
-print(test.template)
+            df = pd.DataFrame(self.conf,
+                              index=self.atoms)[slices[n]:slices[n+1]]
+            self.template = self.template.replace(F'$GEOMETRY_{n+1}',
+                                                  df.to_string(header=False))

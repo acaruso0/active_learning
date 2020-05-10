@@ -19,9 +19,11 @@ class Loader():
                                       config.get("locations", "test_set"))
         self.desc_file = os.path.join(self.main,
                                       config.get("locations", "desc_file"))
-        self.fit_fold = os.path.join(self.main, 'fitting')
-        self.fit_code = config.get("locations", 'fitting_code')
-        self.fit_exe = config.get("locations", "fit_exe")
+        self.fit_fold = os.path.join(self.main, "fitting")
+        self.train_out = os.path.join(self.main, "train_out.xyz")
+        self.fit_exe = os.path.join(self.fit_fold,
+                                    config.get("locations", 'fitting_code'),
+                                    config.get("locations", "fit_exe"))
         self.eval_exe = config.get("locations", "eval_exe")
         self.calculations = os.path.join(self.main, "calculations")
         self.output = os.path.join(self.main, "output")

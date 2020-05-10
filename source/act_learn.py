@@ -4,11 +4,15 @@ import pickle
 import utils
 import numpy as np
 import pandas as pd
+# from sklearn.metrics import mean_squared_error
 from sklearn.gaussian_process import GaussianProcessRegressor as GPR
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.cluster import KMeans
 from fitting import FittingModel
 from loader import Loader
 from submit import SubmitFit
+from time import time
+from calc_en import Energy
 
 
 class Learner(Loader):
@@ -83,84 +87,86 @@ class Learner(Loader):
 
         # while idx_left.shape[0] > 0:
         while self.t < self.tmax:
-            print('Start iteration: ', t)
+            print('Start iteration: ', self.t)
 
-            tic = time.time()
+            tic = time()
 
-            if (idx_now is None) or (idx_now.shape[0] == 0):
-        # first iteration: choose sufficient samples for the first run
-                idx_pick = np.random.choice(idx_left, sample_first_ite,
+            if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
+                # first iteration: choose sufficient samples for the first run
+                idx_pick = np.random.choice(self.idx_left, self.first_batch,
                                             replace=False)
 
             else:
-        # other iterations:  Pool selection by probability
-            # step 1: clustering current training set
-                NCluster = int(idx_now.shape[0] / cluster_size)
-                cls = KMeans(n_clusters = NCluster, init='k-means++',
+                # other iterations:  Pool selection by probability
+                # step 1: clustering current training set
+                NCluster = int(self.idx_now.shape[0] / self.cluster_sz)
+                cls = KMeans(n_clusters=NCluster, init='k-means++',
                              precompute_distances=True, copy_x=True)
-                lab_now = cls.fit_predict(X_train[idx_now])
+                lab_now = cls.fit_predict(self.X_train[self.idx_now])
             # predict the label of current candidates
-                idx_cand = idx_left #
-                lab_cand = cls.predict(X_train[idx_cand])
+                idx_cand = self.idx_left
+                lab_cand = cls.predict(self.X_train[idx_cand])
 
                 p_chose_tmp = np.zeros((idx_cand.shape[0],), dtype=float)
             # step 2: predict the uncertainty by GP
                 for l in set(lab_cand):
-                    idx_now_with_this_label = idx_now[lab_now == l]
+                    idx_now_with_this_label = self.idx_now[lab_now == l]
                     idx_cand_with_this_label = idx_cand[lab_cand == l]
 
-                    gp.fit(X_train[idx_now_with_this_label, :],
-                           Y_train[idx_now_with_this_label])
-                    prd_cand_with_this_label, uct_cand_with_this_label = gp.predict(X_train[idx_cand_with_this_label], return_std=True)
+                    self.gp.fit(self.X_train[idx_now_with_this_label, :],
+                                self.Y_train[idx_now_with_this_label])
+                    prd_cand_with_this_label, uct_cand_with_this_label = self.gp.predict(self.X_train[idx_cand_with_this_label], return_std=True)
             # step 3: update selection probability
-                    p_err = np.average(err_train[idx_now_with_this_label])
+                    p_err = np.average(self.err_train[idx_now_with_this_label])
 
-                    p_chose_tmp[lab_cand==l] = TRAINERR_weight * p_err + STD_weight * uct_cand_with_this_label
+                    p_chose_tmp[lab_cand==l] = self.TRAINERR_weight * p_err + self.STD_weight * uct_cand_with_this_label
             # step 4: sample from updated probability
-                nr_pick =  min(p_chose_tmp.shape[0], sample_chose_per_ite)
-                #p_chose_tmp[p_chose_tmp < 1e-4] = 1e-4 # Set the lowest probability
+                nr_pick = min(p_chose_tmp.shape[0], self.batch)
+                # p_chose_tmp[p_chose_tmp < 1e-4] = 1e-4 # Set the lowest probability
                 p_chose_tmp = p_chose_tmp / np.sum(p_chose_tmp)
 
                 idx_pick = np.random.choice(idx_cand, nr_pick, replace=False,
                                             p=p_chose_tmp)
 
             # update energy of those samples newly put into training set
-            idx_left = idx_left[~np.in1d(idx_left, idx_pick)]
+            self.idx_left = self.idx_left[~np.in1d(self.idx_left, idx_pick)]
             print("Calculating the energy...")
-            calc_energy = Energy(coords, idx_pick, atom_lbl, username, path, t)
-            os.chdir(file_folder)
+            calc_energy = Energy(self.coords, idx_pick)
+            #os.chdir(file_folder)
             idx_pick = calc_energy.idx_pick
             print(F'Number of selected configurations in this iteration: {len(idx_pick)}')
-            if (idx_now is None) or (idx_now.shape[0] == 0):
-                idx_now =  idx_pick
+            if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
+                self.idx_now = idx_pick
             else:
-                idx_now  = np.hstack((idx_now, idx_pick ))
-            Y_train[idx_pick] = calc_energy.energy
+                self.idx_now = np.hstack((self.idx_now, idx_pick))
+            self.Y_train[idx_pick] = calc_energy.energy
 
-            with open(path + 'it_' + str(t) + '/tr_set.xyz', 'r+') as labeled_file:
+            new_train = os.path.join(self.calculations, 'it_' + str(self.t),
+                                     'tr_set.xyz')
+            with open(new_train, 'r+') as labeled_file:
                 newxyz = labeled_file.read()
-            with open(fit_fold + '/new_training_set.xyz', 'a+') as oldxyz:
+            with open(self.train_out, 'a+') as oldxyz:
                 oldxyz.write(newxyz)
 
-            train_weights, _ = get_weights(Y_train[idx_now])
+            train_weights, _ = utils.get_weights(self.Y_train[self.idx_now])
 
             print("Fitting the model...")
             # output_folder+file_train_tmp)
-            train_err = model.fit(ite=t, file_lbl='new_training_set.xyz')
+            train_err = self.model.fit(ite=self.t)
             # use either weighted training error or non-weighted training error
-            err_train[idx_now] = np.abs(train_err) * np.sqrt(train_weights)
+            self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
             # section: create new training set and train the model
             print("Creating restart file...")
-            file_train_idx = 'trainset_' + str(t) + '.RESTART'
+            file_train_idx = 'trainset_' + str(self.t) + '.RESTART'
             restart_file = pd.DataFrame()
-            restart_file['idx'] = idx_now
-            restart_file['energy'] = Y_train[idx_now]
-            restart_file['error'] = err_train[idx_now]
-            restart_file.to_csv(output_folder + file_train_idx, sep='\t',
+            restart_file['idx'] = self.idx_now
+            restart_file['energy'] = self.Y_train[self.idx_now]
+            restart_file['error'] = self.err_train[self.idx_now]
+            restart_file.to_csv(self.output + file_train_idx, sep='\t',
                                 index=False)
 
             # section: evaluate current trained model
-            test_err, test_weights = model.evaluate(ite=t)
+            test_err, test_weights = self.model.evaluate(ite=self.t)
 
             train_mse = np.sqrt(np.mean(np.square(train_err)))
             train_wmse = np.sqrt(np.mean(np.square(train_err) * train_weights))
@@ -170,11 +176,10 @@ class Learner(Loader):
 
             toc = time.time()
             print('time consumed this iteration [s]: ', toc-tic)
-            with open(logfile, 'a') as f:
+            with open(self.logfile, 'a') as f:
                 print('{0:d}\t{1:d}\t{2:d}\t{3:.8f}\t{4:.8f}\t{5:.8f}\t{6:.8f}\t{7:.2f}'.format(
-                    t, idx_now.shape[0], idx_left.shape[0],
+                    self.t, self.idx_now.shape[0], self.idx_left.shape[0],
                     train_mse, train_wmse, test_mse, test_wmse,
-                    toc-tic,
-                ), file =f , end = '\n'  )
+                    toc-tic), file=f, end='\n')
 
-            t += 1
+            self.t += 1

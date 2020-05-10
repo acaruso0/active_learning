@@ -4,11 +4,12 @@ import pandas as pd
 import numpy as np
 import subprocess as sp
 from time import sleep
+from loader import Loader
 
 
-class SComputer():
-    def __init__(self, path, username):
-        self.username = username
+class SComputer(Loader):
+    def __init__(self, path):
+        super().__init__()
         self.path = path
         self.jobs = None
 
@@ -53,11 +54,10 @@ class SComputer():
         return None
 
 
-class SubmitScript():
-    def __init__(self, username, email):
-        self.filename = ''
-        self.username = username
-        self.email = email
+class _SubmitScript(Loader):
+    def __init__(self, path):
+        super().__init__()
+        self.path = path
         self.load_template()
 
     def load_template(self):
@@ -66,18 +66,18 @@ class SubmitScript():
         self.template = self.template.replace('$EMAIL', self.email)
         return None
 
-    def write_file(self, path):
-        with open(os.path.join([path, self.filename]), 'w+') as submit_file:
+    def write_file(self):
+        with open(os.path.join([self.path, self.filename]), 'w+') as submit_file:
             submit_file.writelines(self.template)
         return None
 
 
-class SubmitMain(SubmitScript):
-    def __init__(self, username, email, path):
-        super().__init__(username, email)
+class SubmitMain(_SubmitScript):
+    def __init__(self, path):
+        super().__init__(path)
         self.filename = 'submit.sh'
         self.load_settings()
-        self.write_file(path)
+        self.write_file()
 
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'python'])
@@ -93,22 +93,18 @@ class SubmitMain(SubmitScript):
         self.template = self.template.replace('$COMMAND', command)
 
 
-class SubmitFit(SubmitScript):
-    def __init__(self, username, email, path, fitting_code, train_set, delta,
-                 alpha=0.0005):
-        super().__init__(username, email)
+class SubmitFit(_SubmitScript):
+    def __init__(self, path, alpha=0.0005):
+        super().__init__(path)
         self.filename = 'submit_fit.sh'
-        self.fitting_code = fitting_code
-        self.train_set = train_set
-        self.delta = delta
         self.alpha = alpha
         self.load_settings()
-        self.write_file(path)
+        self.write_file()
 
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'gsl'])
         line2 = ' '.join(['module', 'load', 'netcdf'])
-        submit_lst = [self.fitting_code, self.train_set, str(self.delta),
+        submit_lst = [self.fit_exe, self.train_out, str(self.delta_E),
                       str(self.alpha), '>', 'fit.log', '2>', 'fit.err']
         line3 = ' '.join(submit_lst)
         command = '\n'.join([line1, line2, line3])
@@ -119,14 +115,13 @@ class SubmitFit(SubmitScript):
         self.template = self.template.replace('$COMMAND', command)
 
 
-class SubmitMolpro(SubmitScript):
-    def __init__(self, username, email, path, molpro_code, cpu=4):
-        super().__init__(username, email)
+class SubmitMolpro(_SubmitScript):
+    def __init__(self, path, cpu=4):
+        super().__init__(path)
         self.filename = 'submit_fit.sh'
-        self.energy_code = molpro_code
         self.cpu = str(cpu)
         self.load_settings()
-        self.write_file(path)
+        self.write_file()
 
     def load_settings(self):
         tempdir = os.path.join('oasis', 'scratch', 'comet', self.username,
@@ -135,7 +130,7 @@ class SubmitMolpro(SubmitScript):
         line2 = ' '.join(['module', 'load', 'lapack'])
         line3 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`'])
         line4 = ' '.join(['SCRATCH=`mktemp', '-d', tempdir + '`'])
-        line5 = ' '.join([self.energy_code, '-n', self.cpu, '-o', 'input.log',
+        line5 = ' '.join([self.molpro, '-n', self.cpu, '-o', 'input.log',
                           '-d', '"${SCRATCH}"', 'input'])
         line6 = ' '.join(['rm', '-rf', '"${SCRATCH}"'])
         command = '\n'.join([line1, line2, line3, line4, line5, line6])
