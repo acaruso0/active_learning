@@ -19,10 +19,7 @@ class SComputer(Loader):
 
         for i in job_lst:
             pick_fld = os.path.join(self.path, str(i))
-            try:
-                os.mkdir(pick_fld)
-            except:
-                pass
+            os.makedirs(pick_fld, exist_ok=True)
             os.chdir(pick_fld)
             job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
             check = job.communicate()[0]

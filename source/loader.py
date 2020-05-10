@@ -26,10 +26,6 @@ class Loader():
                                     config.get("locations", "fit_exe"))
         self.eval_exe = config.get("locations", "eval_exe")
         self.calculations = os.path.join(self.main, "calculations")
-        try:
-            os.mkdir(self.calculations)
-        except:
-            pass
         self.output = os.path.join(self.main, "output")
 
         self.username = config.get("account", "username")

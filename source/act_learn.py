@@ -4,7 +4,6 @@ import pickle
 import utils
 import numpy as np
 import pandas as pd
-# from sklearn.metrics import mean_squared_error
 from sklearn.gaussian_process import GaussianProcessRegressor as GPR
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.cluster import KMeans
@@ -18,11 +17,13 @@ from calc_en import Energy
 class Learner(Loader):
     def __init__(self):
         super().__init__()
+        self.prepare()
+        self.learn()
 
     def prepare(self):
         self.kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))
         self.gp = GPR(kernel=self.kernel, n_restarts_optimizer=9, alpha=1e-6)
-        self.model = FittingModel(self.main, self.fit_exe, self.eval_exe)
+        self.model = FittingModel()
 
         self.coords, _ = utils.read_data(self.file_train)
         with open(self.desc_file, 'rb') as pickled:
@@ -36,6 +37,7 @@ class Learner(Loader):
         self.err_train = np.zeros_like(self.idx_all, dtype=float)
 
         os.makedirs(self.output, exist_ok=True)
+        os.makedirs(self.calculations, exist_ok=True)
 
         utils.write_energy_file(self.file_test, self.output + 'val_refer.dat',
                                 col_to_write=1)
@@ -183,3 +185,7 @@ class Learner(Loader):
                     toc-tic), file=f, end='\n')
 
             self.t += 1
+
+
+if __name__ == "__main__":
+    system = Learner()
