@@ -17,7 +17,7 @@ def atoms(xyz_path, natoms):
     return at_list
 
 
-def read_data(xyz_path, picked_idx=[]):
+def read_data(xyz_path, picked_idx=[], E_columns=4):
     command = F'head -n 2 {xyz_path} | tail -n 1'
     call = sp.Popen(command, shell=True, stdout=sp.PIPE)
     E_columns = len(call.communicate()[0].split())

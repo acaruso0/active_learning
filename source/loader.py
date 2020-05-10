@@ -5,14 +5,14 @@ from utils import atoms
 
 
 class Loader():
-    def __init__(self, settings_file=os.path.join('..', 'settings.ini')):
+    def __init__(self, settings_file='settings.ini'):
         self.settings = settings_file
         self.load()
 
     def load(self):
         config = configparser.ConfigParser()
         config.read(self.settings)
-        self.main = os.path.join(os.getcwd(), '..')
+        self.main = os.getcwd()
         self.file_train = os.path.join(self.main,
                                        config.get("locations", "train_set"))
         self.file_test = os.path.join(self.main,

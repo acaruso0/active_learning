@@ -9,7 +9,7 @@ from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 from sklearn.cluster import KMeans
 from fitting import FittingModel
 from loader import Loader
-from submit import SubmitFit
+from submit import SubmitFit, SubmitMolpro
 from time import time
 from calc_en import Energy
 
@@ -43,9 +43,8 @@ class Learner(Loader):
                                 col_to_write=1)
         self.file_train_tmp = '_trainset_tmp.xyz'
 
-        fitting_code = os.path.join([self.fit_code, self.fit_exe])
-        SubmitFit(self.username, self.email, self.fit_fold, fitting_code,
-                  self.train_set, self.delta_E)
+        SubmitFit(self.fit_fold)
+        SubmitMolpro(self.calculations)
 
         # Logfile
         self.logfile = self.output + '_PickSet.log'

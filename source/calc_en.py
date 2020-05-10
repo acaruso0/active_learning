@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import subprocess as sp
 from loader import Loader
-from submit import SComputer, SubmitMolpro
+from submit import SComputer
 
 
 class Energy(Loader):
@@ -18,11 +18,9 @@ class Energy(Loader):
 
     def calculate_energy(self):
         self.split()
-        submit = SubmitMolpro(self.username, self.email, self.calculations,
-                              self.molpro)
-        submit_en = os.path.join(self.calculations, submit.filename)
+        submit_calc = os.path.join(self.calculations, "submit_calc.sh")
         SComputer(self.calculations, self.username)
-        SComputer.run(self.pick, submit_en)
+        SComputer.run(self.pick, submit_calc)
         SComputer.check()
 
         it_fld = os.path.join(self.calculations, 'it_' + str(self.t))

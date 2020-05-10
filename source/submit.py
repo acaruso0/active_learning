@@ -115,7 +115,7 @@ class SubmitFit(_SubmitScript):
 class SubmitMolpro(_SubmitScript):
     def __init__(self, path, cpu=4):
         super().__init__(path)
-        self.filename = 'submit_fit.sh'
+        self.filename = 'submit_calc.sh'
         self.cpu = str(cpu)
         self.load_settings()
         self.write_file()

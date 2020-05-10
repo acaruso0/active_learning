@@ -6,14 +6,14 @@ import utils
 import numpy as np
 import pandas as pd
 import subprocess as sp
-from submit import SComputer, SubmitFit
+from submit import SComputer
 from loader import Loader
 
 
 class FittingModel(Loader):
     def __init__(self):
         super().__init__()
-        self.xyz_test, self.e_test = utils.read_data(self.test_file,
+        self.xyz_test, self.e_test = utils.read_data(self.file_test,
                                                      E_columns=4)
         self.weights_test, _ = utils.get_weights(self.e_test[:, 0],
                                                  self.delta_E, self.E_min)
@@ -29,8 +29,6 @@ class FittingModel(Loader):
 
         # Next line: command to run the fitting code
         os.chdir(self.fit_fold)
-        SubmitFit()
-
         if os.path.exists('logs'):
             shutil.rmtree('logs')
         os.mkdir('logs')
