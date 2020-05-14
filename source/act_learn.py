@@ -25,7 +25,7 @@ class Learner(Loader):
         self.gp = GPR(kernel=self.kernel, n_restarts_optimizer=9, alpha=1e-6)
         self.model = FittingModel()
 
-        self.coords, _ = utils.read_data(self.file_train)
+        self.coords, _ = utils.read_data(self.train_set)
         with open(self.desc_file, 'rb') as pickled:
             self.X_train = pickle.load(pickled)
         self.Y_train = np.zeros(self.X_train.shape[0])
@@ -39,9 +39,8 @@ class Learner(Loader):
         os.makedirs(self.output, exist_ok=True)
         os.makedirs(self.calculations, exist_ok=True)
 
-        utils.write_energy_file(self.file_test, os.path.join(self.output,
+        utils.write_energy_file(self.test_set, os.path.join(self.output,
                                 'val_refer.dat'), col_to_write=1)
-        self.file_train_tmp = '_trainset_tmp.xyz'
 
         SubmitFit(self.fit_fold)
         SubmitMolpro(self.calculations)
@@ -62,8 +61,8 @@ class Learner(Loader):
             'Nr of samples in first iteration': self.first_batch,
             'Nr of samples picked in other iterations': self.batch,
             'cluster size': self.cluster_sz,
-            'STD weight': self.STD_w,
-            'TRAIN ERROR weight': self.TRAINERR_w,
+            'STD weight': self.std_w,
+            'TRAIN ERROR weight': self.trainerr_w,
             'Used Guassian Process model': self.gp,
         }
 
@@ -120,7 +119,7 @@ class Learner(Loader):
             # step 3: update selection probability
                     p_err = np.average(self.err_train[idx_now_with_this_label])
 
-                    p_chose_tmp[lab_cand==l] = self.TRAINERR_weight * p_err + self.STD_weight * uct_cand_with_this_label
+                    p_chose_tmp[lab_cand==l] = self.trainerr_w * p_err + self.std_w * uct_cand_with_this_label
             # step 4: sample from updated probability
                 nr_pick = min(p_chose_tmp.shape[0], self.batch)
                 # p_chose_tmp[p_chose_tmp < 1e-4] = 1e-4 # Set the lowest probability
@@ -150,21 +149,19 @@ class Learner(Loader):
                 oldxyz.write(newxyz)
 
             train_weights, _ = utils.get_weights(self.Y_train[self.idx_now],
-                                                 self.delta_E, self.E_min)
+                                                 self.delta_e, self.e_min)
 
             print("Fitting the model...")
-            # output_folder+file_train_tmp)
             train_err = self.model.fit(ite=self.t)
-            # use either weighted training error or non-weighted training error
             self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
-            # section: create new training set and train the model
+
             print("Creating restart file...")
-            file_train_idx = 'trainset_' + str(self.t) + '.RESTART'
+            train_set_idx = 'trainset_' + str(self.t) + '.RESTART'
             restart_file = pd.DataFrame()
             restart_file['idx'] = self.idx_now
             restart_file['energy'] = self.Y_train[self.idx_now]
             restart_file['error'] = self.err_train[self.idx_now]
-            restart_file.to_csv(self.output + file_train_idx, sep='\t',
+            restart_file.to_csv(self.output + train_set_idx, sep='\t',
                                 index=False)
 
             # section: evaluate current trained model

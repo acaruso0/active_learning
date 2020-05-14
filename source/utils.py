@@ -39,11 +39,11 @@ def read_data(xyz_path, picked_idx=[], E_columns=4):
     return xyz, E
 
 
-def get_weights(E, delta_E, E_min):
-    if E_min is None:
-        E_min = np.min(E)
-    w = np.square(delta_E/(E - E_min + delta_E))
-    return w, E_min
+def get_weights(E, delta_e, e_min):
+    if e_min is None:
+        e_min = np.min(E)
+    w = np.square(delta_e/(E - e_min + delta_e))
+    return w, e_min
 
 
 def write_energy_file(infile, outfile='tofitE.dat', picked_idx=[],

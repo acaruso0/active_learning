@@ -16,7 +16,7 @@ class FittingModel(Loader):
         self.xyz_test, self.e_test = utils.read_data(self.file_test,
                                                      E_columns=4)
         self.weights_test, _ = utils.get_weights(self.e_test[:, 0],
-                                                 self.delta_E, self.E_min)
+                                                 self.delta_e, self.e_min)
         self.y_test_ref = self.e_test[:, 1]
 
     # This is the fitting procedure
