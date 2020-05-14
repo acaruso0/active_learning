@@ -13,10 +13,10 @@ from loader import Loader
 class FittingModel(Loader):
     def __init__(self):
         super().__init__()
-        self.xyz_test, self.e_test = utils.read_data(self.file_test,
+        self.xyz_test, self.e_test = utils.read_data(self.test_set,
                                                      E_columns=4)
         self.weights_test = utils.get_weights(self.e_test[:, 0],
-                                                 self.delta_e, self.e_min)
+                                              self.delta_e, self.e_min)
         self.y_test_ref = self.e_test[:, 1]
 
     # This is the fitting procedure
