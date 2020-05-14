@@ -34,7 +34,7 @@ class FittingModel(Loader):
         os.mkdir('logs')
         os.chdir('logs')
         submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
-        instance = SComputer(os.getcwd(), self.username)
+        instance = SComputer(os.getcwd())
         instance.run(list(range(self.nfits)), submit_fit)
         instance.check()
 
