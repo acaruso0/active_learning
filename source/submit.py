@@ -121,16 +121,17 @@ class SubmitMolpro(_SubmitScript):
         self.write_file()
 
     def load_settings(self):
-        tempdir = os.path.join('oasis', 'scratch', 'comet', self.username,
+        tempdir = os.path.join('/', 'oasis', 'scratch', 'comet', self.username,
                                'temp_project', 'batch_serial.XXXXXXXX')
         line1 = ' '.join(['module', 'unload', 'mvapich2_ib'])
         line2 = ' '.join(['module', 'load', 'lapack'])
-        line3 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`'])
-        line4 = ' '.join(['SCRATCH=`mktemp', '-d', tempdir + '`'])
-        line5 = ' '.join([self.molpro, '-n', self.cpu, '-o', 'input.log',
+        line3 = ' '.join(['export', 'PBS_NODEFILE=`generate_pbs_nodefile`'])
+        line4 = ' '.join(['export', 'SLURM_NODEFILE=`generate_pbs_nodefile`\n'])
+        line5 = ' '.join(['SCRATCH=`mktemp', '-d', tempdir + '`'])
+        line6 = ' '.join([self.molpro, '-n', self.cpu, '-o', 'input.log',
                           '-d', '"${SCRATCH}"', 'input'])
-        line6 = ' '.join(['rm', '-rf', '"${SCRATCH}"'])
-        command = '\n'.join([line1, line2, line3, line4, line5, line6])
+        line7 = ' '.join(['rm', '-rf', '"${SCRATCH}"'])
+        command = '\n'.join([line1, line2, line3, line4, line5, line6, line7])
 
         self.template = self.template.replace('$JOBNAME', 'molpro')
         self.template = self.template.replace('$CPU', self.cpu)

@@ -39,12 +39,10 @@ def read_data(xyz_path, picked_idx=[], E_columns=4):
     return xyz, E
 
 
-def get_weights(E, delta_E, E_min=None):
+def get_weights(E, delta_E, E_min):
     if E_min is None:
         E_min = np.min(E)
     w = np.square(delta_E/(E - E_min + delta_E))
-    w_mean = np.mean(w)
-    w /= w_mean
     return w, E_min
 
 
