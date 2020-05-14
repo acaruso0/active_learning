@@ -15,7 +15,7 @@ class FittingModel(Loader):
         super().__init__()
         self.xyz_test, self.e_test = utils.read_data(self.file_test,
                                                      E_columns=4)
-        self.weights_test, _ = utils.get_weights(self.e_test[:, 0],
+        self.weights_test = utils.get_weights(self.e_test[:, 0],
                                                  self.delta_e, self.e_min)
         self.y_test_ref = self.e_test[:, 1]
 

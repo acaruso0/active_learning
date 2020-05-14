@@ -148,7 +148,7 @@ class Learner(Loader):
             with open(self.train_out, 'a+') as oldxyz:
                 oldxyz.write(newxyz)
 
-            train_weights, _ = utils.get_weights(self.Y_train[self.idx_now],
+            train_weights = utils.get_weights(self.Y_train[self.idx_now],
                                                  self.delta_e, self.e_min)
 
             print("Fitting the model...")
