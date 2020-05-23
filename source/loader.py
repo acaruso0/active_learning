@@ -24,7 +24,7 @@ class Loader():
                 elif item[0] in f:
                     setattr(self, item[0], float(item[1]))
                 elif item[0] in b:
-                    setattr(self, item[0], bool(item[1]))
+                    setattr(self, item[0], eval(item[1]))
                 else:
                     setattr(self, item[0], item[1])
 

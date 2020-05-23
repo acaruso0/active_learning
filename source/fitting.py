@@ -28,13 +28,13 @@ class FittingModel(Loader):
             ite = ''
 
         # Next line: command to run the fitting code
+        instance = SComputer(os.getcwd())
         os.chdir(self.fit_fold)
         if os.path.exists('logs'):
             shutil.rmtree('logs')
         os.mkdir('logs')
         os.chdir('logs')
         submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
-        instance = SComputer(os.getcwd())
         instance.run(list(range(self.nfits)), submit_fit)
         instance.check()
 
