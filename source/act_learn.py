@@ -172,7 +172,7 @@ class Learner(Loader):
             test_mse = np.sqrt(np.mean(np.square(test_err)))
             test_wmse = np.sqrt(np.mean(np.square(test_err) * test_weights))
 
-            toc = time.time()
+            toc = time()
             print('time consumed this iteration [s]: ', toc-tic)
             with open(self.logfile, 'a') as f:
                 print('{0:d}\t{1:d}\t{2:d}\t{3:.8f}\t{4:.8f}\t{5:.8f}\t{6:.8f}\t{7:.2f}'.format(
