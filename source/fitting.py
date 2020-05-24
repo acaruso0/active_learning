@@ -28,20 +28,18 @@ class FittingModel(Loader):
             ite = ''
 
         # Next line: command to run the fitting code
-        instance = SComputer(os.getcwd())
-        os.chdir(self.fit_fold)
-        if os.path.exists('logs'):
-            shutil.rmtree('logs')
-        os.mkdir('logs')
-        os.chdir('logs')
+        logs_fld = os.path.join(self.fit_fold, "logs")
+        if os.path.exists(logs_fld):
+            shutil.rmtree(logs_fld)
+        os.mkdir(logs_fld)
         submit_fit = os.path.join(self.fit_fold, "submit_fit.sh")
+        instance = SComputer(logs_fld)
         instance.run(list(range(self.nfits)), submit_fit)
         instance.check()
 
         to_sort = {}
         for n in range(self.nfits):
-            path_to_out = os.path.join(self.fit_fold, 'logs', 'fit_' + str(n),
-                                       'fit.log')
+            path_to_out = os.path.join(logs_fld, str(n), 'fit.log')
             with open(path_to_out, 'r+') as outfile:
                 outfile = mmap.mmap(outfile.fileno(), 0)
             is_there = re.search(b'converged.*\n', outfile)
@@ -50,25 +48,27 @@ class FittingModel(Loader):
                 wrmsd = float(line_wrmsd.group(0).split()[2])
                 to_sort[n] = wrmsd
 
-        fit_cdl_file = self.fit_cdl + '.cdl'
-        fit_nc_file = self.fit_fold + self.fit_cdl + '.nc'
+        fit_cdl_file = self.fit_exe + '.cdl'
+        fit_nc_file = self.fit_fold + self.fit_exe + '.nc'
 
         sorted_dct = sorted(to_sort.items(), key=lambda item: item[1])
         best_fit = sorted_dct[0][0]
-        shutil.copytree('fit_' + str(best_fit), 'best_fit')
-        os.chdir('best_fit')
+        best_old = os.path.join(logs_fld, str(best_fit))
+        best_new = os.path.join(logs_fld, 'best_fit')
+        shutil.copytree(best_old, best_new)
+        os.chdir(best_new)
         if os.path.exists(fit_cdl_file):
             sp.call(['ncgen', '-o', fit_nc_file, fit_cdl_file])
 
         # transform fitting coefficients
-        os.rename(self.fit_fold + 'logs', self.fit_fold + 'logs' + ite)
+        os.rename(logs_fld, logs_fld + ite)
 
         # Next line: rename training set error file
-        fold_best_fit = os.path.join(self.fit_fold, 'logs' + ite, 'best_fit')
-        os.chdir(fold_best_fit)
+        fold_best_fit = os.path.join(logs_fld + ite, 'best_fit')
 
         corr_file = os.path.join(fold_best_fit, 'correlation.dat')
         train_err = pd.read_csv(corr_file, sep='\s+', header=None)
+        os.chdir(self.main)
 
         err_sq = np.sqrt(train_err.iloc[:, 3])
         return err_sq
@@ -82,10 +82,10 @@ class FittingModel(Loader):
             ite = ''
 
         # evaluating
-        fit_nc_file = self.fit_fold + self.fit_cdl + '.nc'
+        fit_nc_file = self.fit_fold + self.fit_exe + '.nc'
         os.chdir(self.fit_fold)
         with open('val_energy' + ite + '.dat', 'w+') as energy_log:
-            p = sp.call([self.eval_exe, fit_nc_file, self.test_file],
+            p = sp.call([self.eval_exe, fit_nc_file, self.test_set],
                         stdout=energy_log)
         print('evaluate status: ', p)
 
@@ -94,4 +94,6 @@ class FittingModel(Loader):
 
         err = y_test_pred - self.y_test_ref
         weights = self.weights_test
+        os.chdir(self.main)
+
         return err, weights

@@ -27,10 +27,10 @@ class Energy(Loader):
         os.mkdir(it_fld)
         failed = []
         for i in self.pick:
-            fail_str = ['tail', '-n', '1', F'{str(i)}/input.log']
+            pick_fld = os.path.join(self.calculations, str(i))
+            fail_str = ['tail', '-n', '1', F'{pick_fld}/input.log']
             check_fail = sp.Popen(fail_str, stdout=sp.PIPE)
             check_fail = check_fail.communicate()[0]
-            pick_fld = os.path.join(self.calculations, str(i))
             if check_fail != b' Variable memory released\n':
                 failed.append(i)
                 shutil.rmtree(pick_fld)

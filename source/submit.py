@@ -15,23 +15,21 @@ class SComputer(Loader):
 
     def run(self, job_lst, submit):
         jobs = []
-        path_script = os.path.join(self.path, submit)
-
         for i in job_lst:
             pick_fld = os.path.join(self.path, str(i))
             os.makedirs(pick_fld, exist_ok=True)
             os.chdir(pick_fld)
-            job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
+            job = sp.Popen(["sbatch", submit], stdout=sp.PIPE)
             check = job.communicate()[0]
 
             while b'Submitted batch job' not in check:
                 sleep(60)
-                job = sp.Popen(["sbatch", path_script], stdout=sp.PIPE)
+                job = sp.Popen(["sbatch", submit], stdout=sp.PIPE)
                 check = job.communicate()[0]
 
             job_idx = int(check.decode('utf-8').split()[3])
             jobs.append(job_idx)
-        os.chdir(self.path)
+        os.chdir(self.main)
 
         self.jobs = np.array(jobs)
 
