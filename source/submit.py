@@ -99,7 +99,7 @@ class SubmitFit(_SubmitScript):
     def load_settings(self):
         line1 = ' '.join(['module', 'load', 'gsl'])
         line2 = ' '.join(['module', 'load', 'netcdf'])
-        submit_lst = [self.fit_exe, self.train_out, str(self.delta_e),
+        submit_lst = [self.fit_path, self.train_out, str(self.delta_e),
                       str(self.alpha), '>', 'fit.log', '2>', 'fit.err']
         line3 = ' '.join(submit_lst)
         command = '\n'.join([line1, line2, line3])

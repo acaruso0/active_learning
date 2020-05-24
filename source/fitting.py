@@ -49,7 +49,7 @@ class FittingModel(Loader):
                 to_sort[n] = wrmsd
 
         fit_cdl_file = self.fit_exe + '.cdl'
-        fit_nc_file = self.fit_fold + self.fit_exe + '.nc'
+        fit_nc_file = os.path.join(self.fit_fold, self.fit_exe + '.nc')
 
         sorted_dct = sorted(to_sort.items(), key=lambda item: item[1])
         best_fit = sorted_dct[0][0]
@@ -82,10 +82,10 @@ class FittingModel(Loader):
             ite = ''
 
         # evaluating
-        fit_nc_file = self.fit_fold + self.fit_exe + '.nc'
+        fit_nc_file = self.fit_exe + '.nc'
         os.chdir(self.fit_fold)
         with open('val_energy' + ite + '.dat', 'w+') as energy_log:
-            p = sp.call([self.eval_exe, fit_nc_file, self.test_set],
+            p = sp.call([self.eval_path, fit_nc_file, self.test_set],
                         stdout=energy_log)
         print('evaluate status: ', p)
 

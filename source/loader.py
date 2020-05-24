@@ -38,9 +38,9 @@ class Loader():
         self.train_out = join_main("train_out.xyz")
         self.calculations = join_main("calculations")
         self.output = join_main("output")
-        self.fit_exe = os.path.join(self.fit_fold,
-                                    self.fitting_code, self.fit_exe)
-        self.eval_exe = os.path.join(self.fit_fold,
-                                     self.fitting_code, self.eval_exe)
+        self.fit_path = os.path.join(self.fit_fold,
+                                     self.fitting_code, self.fit_exe)
+        self.eval_path = os.path.join(self.fit_fold,
+                                      self.fitting_code, self.eval_exe)
         self.molecules = np.array(self.molecules.strip('[]').split()).astype(int)
         self.atoms = atoms(self.train_set, np.sum(self.molecules))

@@ -156,12 +156,12 @@ class Learner(Loader):
 
             print("Creating restart file...")
             train_set_idx = 'trainset_' + str(self.t) + '.RESTART'
+            restart_path = os.path.join(self.output, train_set_idx)
             restart_file = pd.DataFrame()
             restart_file['idx'] = self.idx_now
             restart_file['energy'] = self.Y_train[self.idx_now]
             restart_file['error'] = self.err_train[self.idx_now]
-            restart_file.to_csv(self.output + train_set_idx, sep='\t',
-                                index=False)
+            restart_file.to_csv(restart_path, sep='\t', index=False)
 
             # section: evaluate current trained model
             test_err, test_weights = self.model.evaluate(ite=self.t)
