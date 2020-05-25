@@ -59,3 +59,12 @@ def write_energy_file(infile, outfile='tofitE.dat', picked_idx=[],
     _, e = read_data(infile, picked_idx=picked_idx, E_columns=max_col_idx)
     np.savetxt(outfile,  e[:, col_to_write], delimiter='    ')
     return True
+
+
+def write_xyz(coords, atoms, file_path):
+    with open(file_path, 'a+') as outfile:
+        for coord in coords:
+            outfile.write(F"{len(atoms)}\n\n")
+            for n in range(len(atoms)):
+                outfile.write(F"{atoms[n]} {coord[n][0]}"
+                              + F"{coord[n][1]} {coord[n][2]}\n")

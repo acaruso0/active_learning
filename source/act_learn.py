@@ -81,6 +81,15 @@ class Learner(Loader):
                     print(key, end='\n', file=f)
                     print(value, end='\n', file=f)
 
+    def label(self, picks):
+        self.idx_left = self.idx_left[~np.in1d(self.idx_left, picks)]
+        print("Calculating the energy...")
+        calc_energy = Energy(self.coords, picks, self.t)
+        picks = calc_energy.idx_pick
+        self.Y_train[picks] = calc_energy.energy
+
+        return None
+
     def learn(self):
         if self.restart:
             restart = pd.read_csv(self.restart_file, sep='\t')
@@ -135,17 +144,30 @@ class Learner(Loader):
                 idx_pick = np.random.choice(idx_cand, nr_pick, replace=False,
                                             p=p_chose_tmp)
 
-            # update energy of those samples newly put into training set
-            self.idx_left = self.idx_left[~np.in1d(self.idx_left, idx_pick)]
-            print("Calculating the energy...")
-            calc_energy = Energy(self.coords, idx_pick, self.t)
-            idx_pick = calc_energy.idx_pick
+            self.label(idx_pick)
+
+            if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
+                while (len(idx_pick) < self.first_batch):
+                    new_picks = np.random.choice(self.idx_left,
+                                                 self.first_batch - len(idx_pick),
+                                                 replace=False)
+                    self.label(new_picks)
+                    idx_pick = np.append(idx_pick, new_picks)
+            else:
+                while (len(idx_pick) < nr_pick):
+                    new_picks = np.random.choice(self.idx_left,
+                                                 nr_pick - len(idx_pick),
+                                                 replace=False,
+                                                 p=p_chose_tmp)
+                    self.label(new_picks)
+                    idx_pick = np.append(idx_pick, new_picks)
+
+
             print(F'Number of selected configurations in this iteration: {len(idx_pick)}')
             if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
                 self.idx_now = idx_pick
             else:
                 self.idx_now = np.hstack((self.idx_now, idx_pick))
-            self.Y_train[idx_pick] = calc_energy.energy
 
             new_train = os.path.join(self.calculations, 'it_' + str(self.t),
                                      'tr_set.xyz')
@@ -162,12 +184,15 @@ class Learner(Loader):
             self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
 
             if self.t > 0:
-                new_coords, new_desc = self.gen.generate(self.coords[idx_pick])           # NEW
+                p_pick = p_chose_tmp[np.in1d(idx_cand, idx_pick)]
+                new_coords, new_desc = self.gen.generate(self.coords[idx_pick], p_pick)           # NEW
                 self.idx_left = np.append(self.idx_left,                                  # NEW
                                           np.arange(len(self.X_train),                    # NEW
                                                     len(self.X_train) + len(new_coords))) # NEW
                 self.coords = np.append(self.coords, new_coords, axis=0)                  # NEW
-                self.X_train = np.append(self.X_train, new_coords, axis=0)                # NEW
+                self.X_train = np.append(self.X_train, new_desc, axis=0)                # NEW
+                self.Y_train = np.append(self.Y_train, np.zeros(len(new_desc)))
+                self.err_train = np.append(self.err_train, np.zeros(len(new_desc)))
 
             print("Creating restart file...")
             train_set_idx = 'trainset_' + str(self.t) + '.RESTART'
