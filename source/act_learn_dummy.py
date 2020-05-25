@@ -12,6 +12,7 @@ from loader import Loader
 from submit import SubmitFit, SubmitMolpro
 from time import time
 from calc_en import Energy
+from generator import Generator ###
 
 
 class Learner(Loader):
@@ -23,11 +24,18 @@ class Learner(Loader):
     def prepare(self):
         self.kernel = C(1.0, (1e-5, 1e5)) * RBF(15, (1e-5, 1e5))
         self.gp = GPR(kernel=self.kernel, n_restarts_optimizer=9, alpha=1e-6)
-        self.model = FittingModel()
-
+        #! self.model = FittingModel()
         self.coords, _ = utils.read_data(self.train_set)
-        with open(self.desc_file, 'rb') as pickled:
-            self.X_train = pickle.load(pickled)
+        self.gen = Generator() ###
+        self.X_train = self.gen.mbtr_calc(self.coords[0])
+
+        new_coords, new_desc = self.gen.generate(self.coords, self.first_batch)
+        self.coords = np.append(self.coords, new_coords, axis=0)
+        self.X_train = np.append(self.X_train, new_desc, axis=0)
+
+        #! with open(self.desc_file, 'rb') as pickled:
+        #!     self.X_train = pickle.load(pickled)
+        print(self.X_train)
         self.Y_train = np.zeros(self.X_train.shape[0])
 
         self.idx_all = np.arange(self.X_train.shape[0])
@@ -42,8 +50,8 @@ class Learner(Loader):
         utils.write_energy_file(self.test_set, os.path.join(self.output,
                                 'val_refer.dat'), col_to_write=1)
 
-        SubmitFit(self.fit_fold)
-        SubmitMolpro(self.calculations)
+        #! SubmitFit(self.fit_fold)
+        #! SubmitMolpro(self.calculations)
 
         # Logfile
         self.logfile = os.path.join(self.output, '_PickSet.log')
@@ -131,27 +139,28 @@ class Learner(Loader):
             # update energy of those samples newly put into training set
             self.idx_left = self.idx_left[~np.in1d(self.idx_left, idx_pick)]
             print("Calculating the energy...")
-            calc_energy = Energy(self.coords, idx_pick)
-            idx_pick = calc_energy.idx_pick
+            #! calc_energy = Energy(self.coords, idx_pick)
+            #! idx_pick = calc_energy.idx_pick
             print(F'Number of selected configurations in this iteration: {len(idx_pick)}')
             if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
                 self.idx_now = idx_pick
             else:
                 self.idx_now = np.hstack((self.idx_now, idx_pick))
-            self.Y_train[idx_pick] = calc_energy.energy
+            self.Y_train[idx_pick] = np.random.rand(len(idx_pick))  #! calc_energy.energy
 
-            new_train = os.path.join(self.calculations, 'it_' + str(self.t),
-                                     'tr_set.xyz')
-            with open(new_train, 'r+') as labeled_file:
-                newxyz = labeled_file.read()
-            with open(self.train_out, 'a+') as oldxyz:
-                oldxyz.write(newxyz)
+            #! new_train = os.path.join(self.calculations, 'it_' + str(self.t),
+            #!                          'tr_set.xyz')
+            #! with open(new_train, 'r+') as labeled_file:
+            #!     newxyz = labeled_file.read()
+            #! with open(self.train_out, 'a+') as oldxyz:
+            #!     oldxyz.write(newxyz)
 
             train_weights = utils.get_weights(self.Y_train[self.idx_now],
                                                  self.delta_e, self.e_min)
 
             print("Fitting the model...")
-            train_err = self.model.fit(ite=self.t)
+            #! train_err = self.model.fit(ite=self.t)
+            train_err = np.random.rand(len(self.idx_now))
             self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
 
             print("Creating restart file...")
@@ -164,7 +173,9 @@ class Learner(Loader):
             restart_file.to_csv(restart_path, sep='\t', index=False)
 
             # section: evaluate current trained model
-            test_err, test_weights = self.model.evaluate(ite=self.t)
+            #! test_err, test_weights = self.model.evaluate(ite=self.t)
+            test_err = np.random.rand(len(self.idx_now))
+            test_weights = np.random.rand(len(self.idx_now))
 
             train_mse = np.sqrt(np.mean(np.square(train_err)))
             train_wmse = np.sqrt(np.mean(np.square(train_err) * train_weights))
