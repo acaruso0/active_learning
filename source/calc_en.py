@@ -10,10 +10,11 @@ from submit import SComputer
 
 
 class Energy(Loader):
-    def __init__(self, coords, pick):
+    def __init__(self, coords, pick, ite):
         super().__init__()
         self.coords = coords
         self.pick = pick
+        self.t = ite
         self.energy, self.idx_pick, self.idx_fail = self.calculate_energy()
 
     def calculate_energy(self):

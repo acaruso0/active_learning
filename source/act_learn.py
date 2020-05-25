@@ -131,7 +131,7 @@ class Learner(Loader):
             # update energy of those samples newly put into training set
             self.idx_left = self.idx_left[~np.in1d(self.idx_left, idx_pick)]
             print("Calculating the energy...")
-            calc_energy = Energy(self.coords, idx_pick)
+            calc_energy = Energy(self.coords, idx_pick, self.t)
             idx_pick = calc_energy.idx_pick
             print(F'Number of selected configurations in this iteration: {len(idx_pick)}')
             if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
