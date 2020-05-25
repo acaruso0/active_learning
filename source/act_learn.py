@@ -1,6 +1,6 @@
 import os
 import copy
-import pickle
+# import pickle                 # OLD
 import utils
 import numpy as np
 import pandas as pd
@@ -12,6 +12,7 @@ from loader import Loader
 from submit import SubmitFit, SubmitMolpro
 from time import time
 from calc_en import Energy
+from generator import Generator # NEW
 
 
 class Learner(Loader):
@@ -26,8 +27,14 @@ class Learner(Loader):
         self.model = FittingModel()
 
         self.coords, _ = utils.read_data(self.train_set)
-        with open(self.desc_file, 'rb') as pickled:
-            self.X_train = pickle.load(pickled)
+        self.gen = Generator() # NEW
+        self.X_train = self.gen.mbtr_calc(self.coords[0])           # NEW
+
+        new_coords, new_desc = self.gen.generate(self.coords)       # NEW
+        self.coords = np.append(self.coords, new_coords, axis=0)    # NEW
+        self.X_train = np.append(self.X_train, new_desc, axis=0)    # NEW
+        # with open(self.desc_file, 'rb') as pickled:               # OLD
+        #     self.X_train = pickle.load(pickled)                   # OLD
         self.Y_train = np.zeros(self.X_train.shape[0])
 
         self.idx_all = np.arange(self.X_train.shape[0])
@@ -153,6 +160,13 @@ class Learner(Loader):
             print("Fitting the model...")
             train_err = self.model.fit(ite=self.t)
             self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
+
+            new_coords, new_desc = self.gen.generate(self.coords[idx_pick])           # NEW
+            self.idx_left = np.append(self.idx_left,                                  # NEW
+                                      np.arange(len(self.X_train),                    # NEW
+                                                len(self.X_train) + len(new_coords))) # NEW
+            self.coords = np.append(self.coords, new_coords, axis=0)                  # NEW
+            self.X_train = np.append(self.X_train, new_coords, axis=0)                # NEW
 
             print("Creating restart file...")
             train_set_idx = 'trainset_' + str(self.t) + '.RESTART'

@@ -70,8 +70,8 @@ class FittingModel(Loader):
         train_err = pd.read_csv(corr_file, sep='\s+', header=None)
         os.chdir(self.main)
 
-        err_sq = np.sqrt(train_err.iloc[:, 3])
-        return err_sq
+        err_sqrt = np.sqrt(train_err.iloc[:, 3])
+        return err_sqrt
 
     # test/evaluation stage
     # Output is the test error on each sample and the corresponding weight
