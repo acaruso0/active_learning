@@ -27,7 +27,7 @@ class Learner(Loader):
         self.model = FittingModel()
 
         self.coords, _ = utils.read_data(self.train_set)
-        self.gen = Generator() # NEW
+        self.gen = Generator()                                      # NEW
         self.X_train = self.gen.mbtr_calc(self.coords[0])           # NEW
 
         new_coords, new_desc = self.gen.generate(self.coords)       # NEW
@@ -161,12 +161,13 @@ class Learner(Loader):
             train_err = self.model.fit(ite=self.t)
             self.err_train[self.idx_now] = np.abs(train_err) * np.sqrt(train_weights)
 
-            new_coords, new_desc = self.gen.generate(self.coords[idx_pick])           # NEW
-            self.idx_left = np.append(self.idx_left,                                  # NEW
-                                      np.arange(len(self.X_train),                    # NEW
-                                                len(self.X_train) + len(new_coords))) # NEW
-            self.coords = np.append(self.coords, new_coords, axis=0)                  # NEW
-            self.X_train = np.append(self.X_train, new_coords, axis=0)                # NEW
+            if self.t > 0:
+                new_coords, new_desc = self.gen.generate(self.coords[idx_pick])           # NEW
+                self.idx_left = np.append(self.idx_left,                                  # NEW
+                                          np.arange(len(self.X_train),                    # NEW
+                                                    len(self.X_train) + len(new_coords))) # NEW
+                self.coords = np.append(self.coords, new_coords, axis=0)                  # NEW
+                self.X_train = np.append(self.X_train, new_coords, axis=0)                # NEW
 
             print("Creating restart file...")
             train_set_idx = 'trainset_' + str(self.t) + '.RESTART'

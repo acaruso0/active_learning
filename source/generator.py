@@ -29,7 +29,7 @@ class Generator(Loader):
         return mbtr
 
     def generate(self, configs, sigma=[1]):  # sigma is a numpy array
-        picks_tot = 2*self.first_batch
+        picks_tot = 5*self.first_batch
         picks = (np.array([x/sum(sigma) for x in sigma])*picks_tot).astype(int)
         print(picks)
         new_config, new_desc = [], []
