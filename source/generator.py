@@ -1,7 +1,4 @@
 import numpy as np
-import math
-import pickle
-import utils
 from loader import Loader
 from ase import Atoms
 from dscribe.descriptors import MBTR
@@ -31,12 +28,21 @@ class Generator(Loader):
         mbtr = self.mbtr.create(structure)
         return mbtr
 
-    def generate(self, configs, picks_tot, sigma=[0.1]):  # sigma is a numpy array
-        picks = np.array([x/sum(sigma) for x in sigma])*picks_tot
+    def generate(self, configs, sigma=[1]):  # sigma is a numpy array
+        picks_tot = 2*self.first_batch
+        picks = (np.array([x/sum(sigma) for x in sigma])*picks_tot).astype(int)
+        print(picks)
         new_config, new_desc = [], []
         for n, config in enumerate(configs):
             config = config.flatten()
-            cov = (1/sigma[n])*np.identity(config.shape[0])
+            cov = np.exp(sigma[n])*np.identity(config.shape[0])
             normal = np.random.multivariate_normal(config, cov, picks[n])
-            normal_desc = np.array([self.mbtr_calc(coord) for coord in normal])
-            new_config. append(normal)
+            normal = np.reshape(normal, (-1, len(self.atoms), 3))
+            normal_desc = np.array([self.mbtr_calc(coord)[0] for coord in normal])
+            if n < 1:
+                new_config = normal
+                new_desc = normal_desc
+            else:
+                new_config = np.append(new_config, normal, axis=0)
+                new_desc = np.append(new_desc, normal_desc, axis=0)
+        return new_config, new_desc
