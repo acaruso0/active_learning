@@ -12,7 +12,7 @@ from loader import Loader
 from submit import SubmitFit, SubmitMolpro
 from time import time
 from calc_en import Energy
-from generator import Generator # NEW
+from generator import Generator
 
 
 class Learner(Loader):
@@ -27,14 +27,14 @@ class Learner(Loader):
         self.model = FittingModel()
 
         self.coords, _ = utils.read_data(self.train_set)
-        self.gen = Generator()                                      # NEW
-        self.X_train = self.gen.mbtr_calc(self.coords[0])           # NEW
+        self.gen = Generator()
+        self.X_train = self.gen.mbtr_calc(self.coords[0])
 
-        new_coords, new_desc = self.gen.generate(self.coords)       # NEW
-        self.coords = np.append(self.coords, new_coords, axis=0)    # NEW
-        self.X_train = np.append(self.X_train, new_desc, axis=0)    # NEW
-        # with open(self.desc_file, 'rb') as pickled:               # OLD
-        #     self.X_train = pickle.load(pickled)                   # OLD
+        new_coords, new_desc = self.gen.generate(self.coords)
+        self.coords = np.append(self.coords, new_coords, axis=0)
+        self.X_train = np.append(self.X_train, new_desc, axis=0)
+        # with open(self.desc_file, 'rb') as pickled:
+        #     self.X_train = pickle.load(pickled)
         self.Y_train = np.zeros(self.X_train.shape[0])
 
         self.idx_all = np.arange(self.X_train.shape[0])
@@ -88,7 +88,7 @@ class Learner(Loader):
         picks = calc_energy.idx_pick
         self.Y_train[picks] = calc_energy.energy
 
-        return None
+        return picks
 
     def learn(self):
         if self.restart:
@@ -144,23 +144,23 @@ class Learner(Loader):
                 idx_pick = np.random.choice(idx_cand, nr_pick, replace=False,
                                             p=p_chose_tmp)
 
-            self.label(idx_pick)
+            idx_pick = self.label(idx_pick)
 
-            if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
-                while (len(idx_pick) < self.first_batch):
-                    new_picks = np.random.choice(self.idx_left,
-                                                 self.first_batch - len(idx_pick),
-                                                 replace=False)
-                    self.label(new_picks)
-                    idx_pick = np.append(idx_pick, new_picks)
-            else:
-                while (len(idx_pick) < nr_pick):
-                    new_picks = np.random.choice(self.idx_left,
-                                                 nr_pick - len(idx_pick),
-                                                 replace=False,
-                                                 p=p_chose_tmp)
-                    self.label(new_picks)
-                    idx_pick = np.append(idx_pick, new_picks)
+            #if (self.idx_now is None) or (self.idx_now.shape[0] == 0):
+            #    while (len(idx_pick) < self.first_batch):
+            #        new_picks = np.random.choice(self.idx_left,
+            #                                     self.first_batch - len(idx_pick),
+            #                                     replace=False)
+            #        self.label(new_picks)
+            #        idx_pick = np.append(idx_pick, new_picks)
+            #else:
+            #    while (len(idx_pick) < nr_pick):
+            #        new_picks = np.random.choice(self.idx_left,
+            #                                     nr_pick - len(idx_pick),
+            #                                     replace=False,
+            #                                     p=p_chose_tmp)
+            #        self.label(new_picks)
+            #        idx_pick = np.append(idx_pick, new_picks)
 
 
             print(F'Number of selected configurations in this iteration: {len(idx_pick)}')
@@ -185,12 +185,12 @@ class Learner(Loader):
 
             if self.t > 0:
                 p_pick = p_chose_tmp[np.in1d(idx_cand, idx_pick)]
-                new_coords, new_desc = self.gen.generate(self.coords[idx_pick], p_pick)           # NEW
-                self.idx_left = np.append(self.idx_left,                                  # NEW
-                                          np.arange(len(self.X_train),                    # NEW
-                                                    len(self.X_train) + len(new_coords))) # NEW
-                self.coords = np.append(self.coords, new_coords, axis=0)                  # NEW
-                self.X_train = np.append(self.X_train, new_desc, axis=0)                # NEW
+                new_coords, new_desc = self.gen.generate(self.coords[idx_pick], p_pick)
+                self.idx_left = np.append(self.idx_left,
+                                          np.arange(len(self.X_train),
+                                                    len(self.X_train) + len(new_coords)))
+                self.coords = np.append(self.coords, new_coords, axis=0)
+                self.X_train = np.append(self.X_train, new_desc, axis=0)
                 self.Y_train = np.append(self.Y_train, np.zeros(len(new_desc)))
                 self.err_train = np.append(self.err_train, np.zeros(len(new_desc)))
 
