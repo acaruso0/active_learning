@@ -35,7 +35,7 @@ class Learner(Loader):
         self.X_train = np.append(self.X_train, new_desc, axis=0)
         if self.restart:
             with open(self.desc_file, 'rb') as pickled:
-            self.coords, self.X_train = pickle.load(pickled)
+                self.coords, self.X_train = pickle.load(pickled)
         self.Y_train = np.zeros(self.X_train.shape[0])
 
         self.idx_all = np.arange(self.X_train.shape[0])
