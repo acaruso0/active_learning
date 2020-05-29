@@ -1,6 +1,6 @@
 import os
 import copy
-# import pickle                 # OLD
+import pickle
 import utils
 import numpy as np
 import pandas as pd
@@ -33,8 +33,9 @@ class Learner(Loader):
         new_coords, new_desc = self.gen.generate(self.coords)
         self.coords = np.append(self.coords, new_coords, axis=0)
         self.X_train = np.append(self.X_train, new_desc, axis=0)
-        # with open(self.desc_file, 'rb') as pickled:
-        #     self.X_train = pickle.load(pickled)
+        if self.restart:
+            with open(self.desc_file, 'rb') as pickled:
+            self.coords, self.X_train = pickle.load(pickled)
         self.Y_train = np.zeros(self.X_train.shape[0])
 
         self.idx_all = np.arange(self.X_train.shape[0])
@@ -202,6 +203,9 @@ class Learner(Loader):
             restart_file['energy'] = self.Y_train[self.idx_now]
             restart_file['error'] = self.err_train[self.idx_now]
             restart_file.to_csv(restart_path, sep='\t', index=False)
+            pool_path = os.path.join(self.output, "pool")
+            with open(pool_path, 'wb') as fp:
+                pickle.dump((self.coords, self.X_train), fp)
 
             # section: evaluate current trained model
             test_err, test_weights = self.model.evaluate(ite=self.t)
