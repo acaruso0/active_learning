@@ -36,11 +36,11 @@ class Generator(Loader):
         return loc
 
     def generate(self, configs, p_list=[1]):
-        tot_picks = 20#5*self.first_batch
+        tot_picks = 10*self.first_batch
         configs = configs.reshape((len(configs), -1))
         en_seeds = np.array([config[3:] for config in configs])
         en_seeds = ps.energy(en_seeds.flatten(), configs.shape[0])
-        picks = [(p_list[n]*70)/(sum(p_list)*en_seeds[n]) for n in range(configs.shape[0])]
+        picks = [p_list[n]/sum(p_list) for n in range(configs.shape[0])]
         picks = (np.array(picks)*tot_picks).astype(int)
         for n, config in enumerate(configs):
             cov = 0.1*np.exp(-p_list[n]/sum(p_list))*np.identity(config.shape[0])
@@ -52,7 +52,9 @@ class Generator(Loader):
             normal = normal[np.linalg.norm(normal[:, 0] - self.mass_centr(normal[:, 1:]), axis=1) > 1]
             normal = normal[np.linalg.norm(normal[:, 0] - self.mass_centr(normal[:, 1:]), axis=1) < 9]
             normal_desc = np.array([self.mbtr_calc(coord)[0] for coord in normal])
-            if n < 1:
+            if normal_desc.shape[0] == 0:
+                continue
+            elif n < 1:
                 new_config = normal
                 new_desc = normal_desc
             else:
