@@ -54,7 +54,7 @@ class Generator(Loader):
             normal_desc = np.array([self.mbtr_calc(coord)[0] for coord in normal])
             if normal_desc.shape[0] == 0:
                 continue
-            elif n < 1:
+            elif "new_config" not in locals():
                 new_config = normal
                 new_desc = normal_desc
             else:
