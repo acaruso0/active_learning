@@ -29,12 +29,6 @@ class Generator(Loader):
         mbtr = self.mbtr.create(structure)
         return mbtr
 
-    def mass_centr(self, coords):
-        mo = 15.999
-        mh = 1.00784
-        loc = (1/(mo + 2*mh))*(mo*coords[:, 0] + mh*coords[:, 1] + mh*coords[:, 2])
-        return loc
-
     def generate(self, configs, p_list=[1]):
         tot_picks = 10*self.first_batch
         configs = configs.reshape((len(configs), -1))
@@ -42,15 +36,16 @@ class Generator(Loader):
         en_seeds = ps.energy(en_seeds.flatten(), configs.shape[0])
         picks = [p_list[n]/sum(p_list) for n in range(configs.shape[0])]
         picks = (np.array(picks)*tot_picks).astype(int)
+        diag = np.append(np.full(3, .8), np.full(9, .01))*np.identity(configs[0].shape[0])
         for n, config in enumerate(configs):
-            cov = 0.1*np.exp(-p_list[n]/sum(p_list))*np.identity(config.shape[0])
+            cov = np.exp(-p_list[n]/sum(p_list))*diag
             normal = np.random.multivariate_normal(config, cov, picks[n])
             normal = np.reshape(normal, (-1, len(self.atoms), 3))
             energies = ps.energy(normal[:, 1:].flatten(), picks[n])
             energies = np.array(energies)
-            normal = normal[energies < 70]
-            normal = normal[np.linalg.norm(normal[:, 0] - self.mass_centr(normal[:, 1:]), axis=1) > 1]
-            normal = normal[np.linalg.norm(normal[:, 0] - self.mass_centr(normal[:, 1:]), axis=1) < 9]
+            normal = normal[energies < 60]
+            normal = normal[np.linalg.norm(normal[:, 0] - normal[:, 1:], axis=1) > np.full([3,1])]
+            normal = normal[np.linalg.norm(normal[:, 0] - normal[:, 1:], axis=1) < np.full([3,9])]
             normal_desc = np.array([self.mbtr_calc(coord)[0] for coord in normal])
             if normal_desc.shape[0] == 0:
                 continue
