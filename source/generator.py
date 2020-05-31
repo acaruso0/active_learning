@@ -42,8 +42,9 @@ class Generator(Loader):
         en_seeds = ps.energy(en_seeds.flatten(), configs.shape[0])
         picks = [p_list[n]/sum(p_list) for n in range(configs.shape[0])]
         picks = (np.array(picks)*tot_picks).astype(int)
+        diag = np.append(np.full(3, 0.3), np.full(9, 0.001))*np.identity(configs[0].shape[0])
         for n, config in enumerate(configs):
-            cov = 0.1*np.exp(-p_list[n]/sum(p_list))*np.identity(config.shape[0])
+            cov = np.exp(-p_list[n]/sum(p_list))*diag
             normal = np.random.multivariate_normal(config, cov, picks[n])
             normal = np.reshape(normal, (-1, len(self.atoms), 3))
             energies = ps.energy(normal[:, 1:].flatten(), picks[n])
