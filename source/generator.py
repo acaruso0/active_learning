@@ -36,7 +36,7 @@ class Generator(Loader):
         en_seeds = ps.energy(en_seeds.flatten(), configs.shape[0])
         picks = [p_list[n]/sum(p_list) for n in range(configs.shape[0])]
         picks = (np.array(picks)*tot_picks).astype(int)
-        diag = np.append(np.full(3, .8), np.full(9, .01))*np.identity(configs[0].shape[0])
+        diag = np.append(np.full(3, 1), np.full(9, .01))*np.identity(configs[0].shape[0])
         for n, config in enumerate(configs):
             cov = np.exp(-p_list[n]/sum(p_list))*diag
             normal = np.random.multivariate_normal(config, cov, picks[n])
@@ -44,8 +44,8 @@ class Generator(Loader):
             energies = ps.energy(normal[:, 1:].flatten(), picks[n])
             energies = np.array(energies)
             normal = normal[energies < 60]
-            normal = normal[np.linalg.norm(normal[:, 0] - normal[:, 1:], axis=1) > np.full([3,1])]
-            normal = normal[np.linalg.norm(normal[:, 0] - normal[:, 1:], axis=1) < np.full([3,9])]
+            dists = np.linalg.norm(normal[:, :1] - normal[:, 1:], axis=2)
+            normal = normal[np.all((dists > np.full(3,1)) & (dists < np.full(3,9)), axis=1)]
             normal_desc = np.array([self.mbtr_calc(coord)[0] for coord in normal])
             if normal_desc.shape[0] == 0:
                 continue
