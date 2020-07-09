@@ -93,7 +93,7 @@ while settings.t < settings.tmax:
 
     if (idx_now is None) or (idx_now.shape[0] == 0):
         # first iteration: choose sufficient samples for the first run
-        idx_pick = np.random.choice(idx_left, first_batch,
+        idx_pick = np.random.choice(idx_left, settings.first_batch,
                                     replace=False)
 
     else:
